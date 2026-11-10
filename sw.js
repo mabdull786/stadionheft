@@ -1,5 +1,5 @@
 // Service Worker: App offline verfügbar, Updates kommen sofort an
-const CACHE = 'stadionheft-v2';
+const CACHE = 'stadionheft-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   // Kartenkacheln nicht speichern (würde den Speicher füllen)
-  if (url.hostname.endsWith('cartocdn.com')) return;
+  if (url.hostname === 'tiles.openfreemap.org') return;
   // Logos, Icons, Bibliotheken: zuerst Cache
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => (res.ok || res.type === 'opaque') ? putInCache(e.request, res) : res)));
 });
