@@ -1,0 +1,1968 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Stadionheft</title>
+<meta name="theme-color" content="#070B12">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stadionheft">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+:root {
+  /* Layout: eine Handy-Spalte (max. 560px), Karten pro Spiel, schwebende Glas-Tableiste unten */
+  --bg: #070B12;
+  --panel: #0C121D;
+  --surface: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.10);
+  --text: #F1F5FA;
+  --muted: rgba(226, 234, 245, 0.60);
+  --accent: #2EF29A;
+  --accent-deep: #10B981;
+  --live: #FF3B5C;
+  --gold: #FFC94D;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 22px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background:
+    radial-gradient(700px 520px at 0% 0%, rgba(46, 242, 154, 0.16), transparent 70%),
+    radial-gradient(700px 600px at 100% 100%, rgba(59, 91, 255, 0.14), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+body.locked { overflow: hidden; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 12px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+
+#view {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 110px);
+  display: grid;
+  gap: 22px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top h1 { font-family: var(--font-display); font-weight: 800; font-size: 40px; letter-spacing: 0.2px; line-height: 1; }
+.pill {
+  font-size: 12px; font-weight: 800; padding: 6px 11px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); white-space: nowrap;
+}
+.demo {
+  display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted);
+  padding: 12px 14px; border-radius: 16px; border: 1px dashed rgba(255, 201, 77, 0.45); background: rgba(255, 201, 77, 0.06);
+}
+.demo b { color: var(--gold); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.card.hl { border-color: rgba(46, 242, 154, 0.65); box-shadow: 0 0 0 1px rgba(46, 242, 154, 0.15) inset; }
+.section { display: grid; gap: 12px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px; }
+.section-head h2 { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.section-head span { color: var(--muted); font-weight: 700; font-size: 14px; }
+.muted { color: var(--muted); }
+.press { transition: transform .15s ease, opacity .15s ease; }
+.press:active { transform: scale(0.97); opacity: .9; }
+
+/* Spieltag-Auswahl */
+.md-head { display: flex; align-items: center; justify-content: space-between; }
+.md-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; }
+.round {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line);
+}
+.round:disabled { opacity: .35; cursor: default; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 16px; margin: -10px -16px 0; scrollbar-width: none; scroll-behavior: smooth; }
+.chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: 0 0 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, .8);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.chip.on { color: #04140C; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); border-color: transparent; box-shadow: 0 6px 18px rgba(46, 242, 154, .35); }
+
+/* Spielkarten */
+.day { display: grid; gap: 10px; }
+.day-title { font-weight: 800; font-size: 14px; color: var(--muted); padding: 0 6px; }
+.match {
+  position: relative; width: 100%; display: grid; grid-template-columns: 1fr 104px 1fr; align-items: center;
+  padding: 16px 10px; text-align: center;
+}
+.team { display: grid; justify-items: center; gap: 8px; min-width: 0; }
+.team-name { font-weight: 700; font-size: 14.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mid { display: grid; justify-items: center; gap: 6px; }
+.score { font-family: var(--font-display); font-weight: 800; font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.time { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.status { font-size: 11px; font-weight: 700; color: var(--muted); }
+.live {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800; color: #fff;
+  background: var(--live); padding: 3px 8px; border-radius: 999px;
+}
+.live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+.mark { position: absolute; top: 10px; right: 12px; width: 16px; height: 16px; }
+.mark.att { color: var(--accent); }
+.mark.plan { color: var(--gold); }
+
+/* Logos */
+.logo { position: relative; width: var(--s); height: var(--s); display: inline-grid; place-items: center; flex: none; }
+.logo .ini {
+  width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 30% 25%, rgba(255, 255, 255, .28), transparent 60%), var(--c);
+  color: #fff; font-weight: 800; font-size: calc(var(--s) * 0.3); letter-spacing: .3px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+}
+.logo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35)); }
+.logo.ok .ini { visibility: hidden; }
+
+/* Tabelle */
+.table { padding: 4px 0 6px; overflow: hidden; }
+.row {
+  display: grid; grid-template-columns: 34px 28px minmax(0, 1fr) 28px 40px 34px; gap: 8px; align-items: center;
+  padding: 9px 12px; font-variant-numeric: tabular-nums;
+}
+.row + .row { border-top: 1px solid var(--line); }
+.row.head { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.row.fav { background: rgba(46, 242, 154, .09); }
+.pos { display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-weight: 800; }
+.zone { width: 4px; height: 22px; border-radius: 4px; background: var(--z, transparent); }
+.row .name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .num { text-align: right; color: var(--muted); }
+.row .pts { text-align: right; font-family: var(--font-display); font-weight: 800; font-size: 19px; }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0 6px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 5px; border-radius: 4px; background: var(--z); }
+.credit { font-size: 11.5px; color: rgba(226, 234, 245, .4); text-align: center; }
+
+/* Karte */
+.map-card { padding: 14px; position: relative; overflow: hidden; }
+.map-card > svg { display: block; width: 100%; height: auto; }
+.lmap { height: 440px; border-radius: 16px; overflow: hidden; background: #0B0F17; position: relative; }
+.map-tools { position: absolute; left: 24px; top: 24px; z-index: 2; display: flex; gap: 6px; }
+.map-tools button { font-size: 12.5px; font-weight: 800; padding: 7px 12px; border-radius: 999px; background: rgba(12, 18, 29, .82);
+  border: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.map-tools button.on { background: var(--accent); color: #04140C; border-color: transparent; }
+.lmap .maplibregl-ctrl-group { border-radius: 14px; overflow: hidden; }
+.lmap .maplibregl-ctrl-attrib { font-size: 10px; }
+.mpin { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: rgba(0, 0, 0, .8);
+  border: 1.5px solid rgba(255, 255, 255, .5); box-shadow: 0 4px 12px rgba(0, 0, 0, .5); cursor: pointer; }
+.mpin.v { border: 3px solid var(--accent); box-shadow: 0 0 16px rgba(46, 242, 154, .7); }
+.de { fill: rgba(255, 255, 255, .035); stroke: rgba(255, 255, 255, .22); stroke-width: 1; stroke-linejoin: round; }
+.pin { cursor: pointer; }
+.pin circle.dot { stroke: rgba(255, 255, 255, .55); stroke-width: 1.2; }
+.pin text { font-family: var(--font-body); font-weight: 800; font-size: 6px; fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.pin.v circle.dot { stroke: var(--accent); stroke-width: 2.4; }
+.pin.v circle.glow { fill: rgba(46, 242, 154, .35); }
+.progress { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+.ring { width: 48px; height: 48px; flex: none; }
+.ring .bg { stroke: rgba(255, 255, 255, .12); }
+.ring .fg { stroke: var(--accent); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.progress b { font-family: var(--font-display); font-size: 22px; font-weight: 800; display: block; line-height: 1.1; }
+.list { display: grid; }
+.item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; width: 100%; text-align: left; }
+.item + .item { border-top: 1px solid var(--line); }
+.item .grow { flex: 1; min-width: 0; }
+.item .t { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .s { font-size: 12.5px; color: var(--muted); }
+.tag { font-size: 11.5px; font-weight: 800; padding: 4px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); white-space: nowrap; }
+.tag.ok { color: #04140C; background: var(--accent); border-color: transparent; }
+.btn-ghost { font-size: 13px; font-weight: 800; padding: 8px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+
+/* Mein Heft */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.stat { padding: 16px; display: grid; gap: 4px; }
+.stat svg { color: var(--accent); }
+.stat b { font-family: var(--font-display); font-size: 38px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; }
+.field label { font-weight: 800; }
+select {
+  font: inherit; font-weight: 700; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line);
+  border-radius: 12px; padding: 8px 10px; max-width: 60%;
+}
+.fav-card { padding: 16px; display: grid; gap: 14px; }
+.fav-top { display: flex; align-items: center; gap: 12px; }
+.wdl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.wdl div { background: rgba(0, 0, 0, .25); border-radius: 14px; padding: 10px; text-align: center; }
+.wdl b { font-family: var(--font-display); font-size: 28px; font-weight: 800; display: block; line-height: 1.1; }
+.wdl span { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.badge { padding: 14px 6px; display: grid; justify-items: center; gap: 6px; text-align: center; }
+.medal { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; position: relative; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .35); }
+.badge.won .medal { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #04140C; box-shadow: 0 8px 22px rgba(46, 242, 154, .35); }
+.medal .arc { position: absolute; inset: 0; }
+.badge b { font-size: 12.5px; }
+.badge small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.visit { display: flex; gap: 14px; padding: 14px; width: 100%; text-align: left; }
+.date { width: 50px; display: grid; justify-items: center; align-content: center; }
+.date b { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1; }
+.date span { font-size: 11.5px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+.date small { font-size: 11px; color: var(--muted); }
+.vsep { width: 1px; background: var(--line); }
+.lines { flex: 1; display: grid; gap: 7px; min-width: 0; }
+.line { display: flex; align-items: center; gap: 8px; }
+.line .n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.line .g { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: rgba(255, 255, 255, .7); }
+.line.w .n { font-weight: 800; }
+.line.w .g { color: #fff; font-weight: 800; }
+.where { font-size: 12.5px; color: var(--muted); display: flex; gap: 5px; align-items: center; }
+.confirm { display: grid; gap: 10px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.empty { padding: 28px 20px; text-align: center; display: grid; gap: 8px; justify-items: center; }
+.empty h3 { font-size: 18px; }
+.empty p { margin: 0; color: var(--muted); max-width: 34ch; }
+
+/* Konto & Liga */
+.auth { padding: 20px 18px; display: grid; gap: 14px; }
+.auth h2 { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1.05; }
+.auth p { margin: 0; color: var(--muted); }
+.form { display: grid; gap: 10px; }
+.form label { font-size: 12.5px; font-weight: 800; color: var(--muted); }
+.input {
+  width: 100%; font: inherit; font-weight: 600; color: var(--text); padding: 13px 14px; border-radius: 14px;
+  background: rgba(0, 0, 0, .3); border: 1px solid var(--line);
+}
+.input::placeholder { color: rgba(226, 234, 245, .35); }
+.inline { display: flex; gap: 8px; }
+.inline .input { flex: 1; min-width: 0; }
+.inline .primary, .inline .secondary { width: auto; padding: 12px 16px; font-size: 14.5px; white-space: nowrap; }
+.msg { font-size: 13px; font-weight: 700; padding: 10px 12px; border-radius: 12px; }
+.msg.err { color: #FFD1D9; background: rgba(255, 59, 92, .14); border: 1px solid rgba(255, 59, 92, .35); }
+.msg.ok { color: #C9FBE3; background: rgba(46, 242, 154, .12); border: 1px solid rgba(46, 242, 154, .35); }
+.hint { font-size: 12px; color: var(--muted); }
+.cloud { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.cloud .grow { flex: 1; min-width: 0; font-size: 13.5px; }
+.cloud b { display: block; font-size: 14.5px; }
+.lg-head { padding: 16px; display: grid; gap: 12px; }
+.lg-head h2 { font-family: var(--font-display); font-size: 30px; font-weight: 800; line-height: 1; }
+.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-weight: 800; letter-spacing: 2px; font-size: 16px;
+  padding: 8px 12px; border-radius: 12px; background: rgba(0, 0, 0, .3); border: 1px dashed rgba(46, 242, 154, .5); color: var(--accent); }
+.lrow { display: grid; grid-template-columns: 30px minmax(0, 1fr) 28px 34px 38px 40px; gap: 8px; align-items: center; padding: 10px 12px; font-variant-numeric: tabular-nums; }
+.lrow + .lrow { border-top: 1px solid var(--line); }
+.lrow.head { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.lrow.me { background: rgba(46, 242, 154, .09); }
+.lrow .who { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 800; }
+.lrow .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lrow .rk { font-weight: 800; text-align: right; }
+.lrow .num { text-align: right; color: var(--muted); }
+.lrow .pts { text-align: right; font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+.feed { display: grid; }
+.feed-item { display: flex; gap: 10px; align-items: center; padding: 12px 14px; }
+.feed-item + .feed-item { border-top: 1px solid var(--line); }
+.feed-item .grow { flex: 1; min-width: 0; }
+.feed-item .t { font-weight: 700; font-size: 14px; }
+.feed-item .s { font-size: 12.5px; color: var(--muted); }
+.avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #04140C;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep)); }
+.lchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.lchips::-webkit-scrollbar { display: none; }
+.lchip { padding: 9px 14px; border-radius: 999px; font-weight: 800; font-size: 13.5px; white-space: nowrap; background: var(--surface); border: 1px solid var(--line); }
+.lchip.on { background: var(--accent); color: #04140C; border-color: transparent; }
+.link-btn { font-weight: 800; font-size: 13.5px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; justify-self: center; padding: 6px; }
+
+/* Verein */
+.comp { display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 800; letter-spacing: .4px; padding: 2px 7px; border-radius: 6px;
+  color: var(--cc); background: color-mix(in srgb, var(--cc) 16%, transparent); border: 1px solid color-mix(in srgb, var(--cc) 40%, transparent); }
+.clubs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.club-btn { display: grid; justify-items: center; gap: 6px; padding: 12px 4px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); font-weight: 700; font-size: 12.5px; }
+.club-btn.on { border-color: var(--accent); background: rgba(46, 242, 154, .1); }
+.club-hero { padding: 18px 16px; display: grid; gap: 16px; }
+.club-hero .two .secondary, .club-hero .two .primary { padding: 13px 8px; font-size: 14.5px; white-space: nowrap; }
+.club-hero h2 { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1.05; }
+.hero-facts { display: flex; gap: 10px; }
+.hero-facts div { flex: 1; background: rgba(0, 0, 0, .25); border-radius: 14px; padding: 10px 12px; }
+.hero-facts b { font-family: var(--font-display); font-size: 26px; font-weight: 800; display: block; line-height: 1; }
+.hero-facts span { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.next { width: 100%; padding: 16px 12px; display: grid; gap: 14px; text-align: center; }
+.next-when { font-weight: 800; color: var(--accent); font-size: 14px; }
+.next .hero-row { grid-template-columns: 1fr 70px 1fr; }
+.next .team-name { white-space: normal; }
+.cm { display: flex; align-items: stretch; }
+.cm-main { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; padding: 12px 12px 12px 14px; text-align: left; }
+.cm .date { width: 42px; }
+.cm .date b { font-size: 24px; }
+.cm-mid { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.cm-meta { display: flex; gap: 6px; align-items: center; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.cm-opp { display: flex; gap: 8px; align-items: center; font-weight: 800; min-width: 0; }
+.cm-opp span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-score { font-family: var(--font-display); font-weight: 800; font-size: 22px; display: grid; justify-items: end; gap: 3px; font-variant-numeric: tabular-nums; }
+.cm-score.time-s { font-size: 18px; color: var(--muted); }
+.res { font-style: normal; font-family: var(--font-body); font-size: 10.5px; font-weight: 800; width: 20px; height: 20px; border-radius: 6px; display: inline-grid; place-items: center; color: #04140C; }
+.res-S { background: var(--accent); }
+.res-U { background: #C9D2DE; }
+.res-N { background: var(--live); color: #fff; }
+.form { display: inline-flex; gap: 4px; }
+.tick { width: 54px; flex: none; display: grid; place-items: center; border-left: 1px solid var(--line); color: var(--muted); }
+.tick.on { color: var(--accent); }
+.tick.plan { color: var(--gold); }
+.mark-s { align-self: center; margin-right: 12px; }
+.mark-s.att { color: var(--accent); }
+.mark-s.plan { color: var(--gold); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.seg button { padding: 9px; border-radius: 10px; font-weight: 800; font-size: 14px; color: var(--muted); }
+.seg button.on { background: rgba(255, 255, 255, .1); color: var(--text); }
+select.input { appearance: auto; }
+.top select { max-width: none; }
+
+/* Buttons */
+.primary {
+  --check: var(--accent);
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px; border-radius: 18px;
+  font-weight: 800; font-size: 16px; color: #04140C; background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  box-shadow: 0 10px 28px rgba(46, 242, 154, .30);
+}
+.secondary {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px; border-radius: 18px;
+  font-weight: 800; font-size: 16px; background: var(--surface); border: 1px solid var(--line);
+}
+
+/* Tableiste */
+.tabbar {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 12px); transform: translateX(-50%);
+  width: min(528px, calc(100% - 24px)); display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 6px;
+  border-radius: 28px; background: rgba(18, 24, 36, .72); border: 1px solid var(--line);
+  backdrop-filter: blur(22px) saturate(1.4); -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45); z-index: 10;
+}
+.tab { display: grid; justify-items: center; gap: 3px; padding: 8px 2px; border-radius: 22px; font-size: 11px; white-space: nowrap; font-weight: 700; color: rgba(255, 255, 255, .7); }
+.tab.on { color: var(--accent); background: rgba(255, 255, 255, .07); }
+
+/* Sheet */
+.sheet-wrap { position: fixed; inset: 0; z-index: 20; display: grid; align-items: end; justify-items: center; }
+.sheet-wrap[hidden] { display: none; }
+.backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: fade .2s ease; }
+.panel {
+  position: relative; width: min(560px, 100%); max-height: 92%; overflow-y: auto; overscroll-behavior: contain;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tint, #2EF29A) 14%, var(--panel)), var(--panel) 320px);
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 28px 28px 0 0;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 24px); display: grid; gap: 18px; animation: up .28s cubic-bezier(.2, .8, .2, 1);
+}
+.grab { width: 40px; height: 5px; border-radius: 9px; background: rgba(255, 255, 255, .25); justify-self: center; }
+.close { position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+.hero { border-radius: 26px; padding: 20px 14px; display: grid; gap: 16px; border: 1px solid var(--line); }
+.hero-row { display: grid; grid-template-columns: 1fr 120px 1fr; align-items: start; }
+.hero .team-name { white-space: normal; font-size: 14px; line-height: 1.25; }
+.role { font-size: 10.5px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.hero .score { font-size: 60px; }
+.hero .time { font-size: 44px; }
+.meta { display: grid; gap: 6px; justify-items: center; font-size: 13px; color: var(--muted); font-weight: 600; text-align: center; }
+.meta span { display: inline-flex; gap: 6px; align-items: center; }
+.banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.banner .grow { flex: 1; }
+.banner b { display: block; font-size: 16px; }
+.banner small { color: var(--muted); }
+.icon-btn { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); color: var(--live); }
+textarea {
+  width: 100%; min-height: 96px; resize: vertical; font: inherit; color: var(--text); padding: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+}
+textarea::placeholder { color: rgba(226, 234, 245, .4); }
+.goals { padding: 0 14px; }
+.goal { display: flex; align-items: center; gap: 10px; padding: 12px 0; }
+.goal + .goal { border-top: 1px solid var(--line); }
+.goal.away { flex-direction: row-reverse; text-align: right; }
+.minute { flex: none; min-width: 40px; text-align: center; font-weight: 800; font-size: 12.5px; color: #04140C; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); border-radius: 999px; padding: 3px 6px; font-variant-numeric: tabular-nums; }
+.goal .who { flex: 1; min-width: 0; font-weight: 700; }
+.goal .who small { display: block; font-size: 11px; font-weight: 800; }
+.goal .sc { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--muted); }
+.info { padding: 0 14px; }
+.info div { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; }
+.info div + div { border-top: 1px solid var(--line); }
+.info dt, .info dd { margin: 0; }
+.info dt { color: var(--muted); }
+.info dd { font-weight: 700; text-align: right; }
+.routes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.routes a { text-decoration: none; }
+.loading { display: grid; place-items: center; padding: 70px 0; }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .15); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 380px) {
+  .match { grid-template-columns: 1fr 88px 1fr; }
+  .score { font-size: 32px; }
+  .badges { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<main id="view" aria-live="polite"></main>
+<nav class="tabbar" aria-label="Bereiche">
+  <button class="tab press" data-act="tab" data-view="verein"><span data-icon="shield"></span>Verein</button>
+  <button class="tab press" data-act="tab" data-view="spiele"><span data-icon="ball"></span>Spiele</button>
+  <button class="tab press" data-act="tab" data-view="liga"><span data-icon="people"></span>Liga</button>
+  <button class="tab press" data-act="tab" data-view="stadien"><span data-icon="map"></span>Stadien</button>
+  <button class="tab press" data-act="tab" data-view="heft"><span data-icon="book"></span>Mein Heft</button>
+</nav>
+<div id="sheet" class="sheet-wrap" hidden></div>
+
+<script>
+'use strict';
+
+/* ================= Konfiguration ================= */
+const API = 'https://api.openligadb.de';
+const LEAGUE = 'bl1';
+const SEASON = (() => { const d = new Date(); return d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1; })();
+const SEASON_LABEL = `${SEASON}/${String((SEASON + 1) % 100).padStart(2, '0')}`;
+const STORE_KEY = 'stadionheft.v1';
+
+/* Konten & Ligen (Supabase). URL und Publishable/Anon-Key aus Supabase → Project Settings → API.
+   Der Key ist öffentlich gedacht, die Daten schützt die Datenbank (Row Level Security). */
+const SUPABASE_URL = 'https://buwizvcvnhlyawaqwtso.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_VsufnEnyCMz4RBB8pj2FKg_rcR8l-i4';
+const AUTH_DOMAIN = 'stadionheft.app';   // Benutzername wird intern zu name@stadionheft.app, es wird nie eine E-Mail verschickt
+const SUPABASE_JS = {
+  src: 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js',
+  sri: 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK',
+};
+const TZ = 'Europe/Berlin';
+
+/* Vereine: Kurzname, Farbe, Stadion. Schlüssel = teamId von OpenLigaDB */
+const CLUBS = {
+  40:  { n: 'Bayern', k: 'FCB', f: 'FC Bayern München', c: '#DC052D', s: 'Allianz Arena', city: 'München', lat: 48.2188, lon: 11.6247 },
+  7:   { n: 'Dortmund', k: 'BVB', f: 'Borussia Dortmund', c: '#E8C400', s: 'Signal Iduna Park', city: 'Dortmund', lat: 51.4926, lon: 7.4519 },
+  6:   { n: 'Leverkusen', k: 'B04', f: 'Bayer 04 Leverkusen', c: '#E32221', s: 'BayArena', city: 'Leverkusen', lat: 51.0383, lon: 7.0022 },
+  1635:{ n: 'Leipzig', k: 'RBL', f: 'RB Leipzig', c: '#DD0741', s: 'Red Bull Arena', city: 'Leipzig', lat: 51.3458, lon: 12.3483 },
+  91:  { n: 'Frankfurt', k: 'SGE', f: 'Eintracht Frankfurt', c: '#E1000F', s: 'Deutsche Bank Park', city: 'Frankfurt am Main', lat: 50.0686, lon: 8.6455 },
+  16:  { n: 'Stuttgart', k: 'VFB', f: 'VfB Stuttgart', c: '#E32219', s: 'MHPArena', city: 'Stuttgart', lat: 48.7922, lon: 9.2320 },
+  112: { n: 'Freiburg', k: 'SCF', f: 'SC Freiburg', c: '#C8102E', s: 'Europa-Park Stadion', city: 'Freiburg', lat: 48.0216, lon: 7.8297 },
+  87:  { n: 'Gladbach', k: 'BMG', f: 'Borussia Mönchengladbach', c: '#1C9A48', s: 'Borussia-Park', city: 'Mönchengladbach', lat: 51.1746, lon: 6.3855 },
+  134: { n: 'Bremen', k: 'SVW', f: 'SV Werder Bremen', c: '#1D9053', s: 'Weserstadion', city: 'Bremen', lat: 53.0665, lon: 8.8376 },
+  81:  { n: 'Mainz', k: 'M05', f: '1. FSV Mainz 05', c: '#C3141E', s: 'Mewa Arena', city: 'Mainz', lat: 49.9839, lon: 8.2244 },
+  95:  { n: 'Augsburg', k: 'FCA', f: 'FC Augsburg', c: '#BA3733', s: 'WWK Arena', city: 'Augsburg', lat: 48.3232, lon: 10.8862 },
+  175: { n: 'Hoffenheim', k: 'TSG', f: 'TSG Hoffenheim', c: '#1961B5', s: 'SNP Arena', city: 'Sinsheim', lat: 49.2381, lon: 8.8876 },
+  80:  { n: 'Union', k: 'FCU', f: '1. FC Union Berlin', c: '#EB1923', s: 'An der Alten Försterei', city: 'Berlin', lat: 52.4573, lon: 13.5681 },
+  65:  { n: 'Köln', k: 'KOE', f: '1. FC Köln', c: '#ED1C24', s: 'RheinEnergieStadion', city: 'Köln', lat: 50.9336, lon: 6.8750 },
+  100: { n: 'HSV', k: 'HSV', f: 'Hamburger SV', c: '#0A3F86', s: 'Volksparkstadion', city: 'Hamburg', lat: 53.5872, lon: 9.8986 },
+  9:   { n: 'Schalke', k: 'S04', f: 'FC Schalke 04', c: '#004D9D', s: 'Veltins-Arena', city: 'Gelsenkirchen', lat: 51.5546, lon: 7.0676 },
+  31:  { n: 'Paderborn', k: 'SCP', f: 'SC Paderborn 07', c: '#005CA9', s: 'Home Deluxe Arena', city: 'Paderborn', lat: 51.7310, lon: 8.7108 },
+  198: { n: 'Elversberg', k: 'SVE', f: 'SV 07 Elversberg', c: '#5B6770', s: 'Ursapharm-Arena', city: 'Spiesen-Elversberg', lat: 49.3170, lon: 7.1270 },
+  131: { n: 'Wolfsburg', k: 'WOB', f: 'VfL Wolfsburg', c: '#65B32E', s: 'Volkswagen Arena', city: 'Wolfsburg', lat: 52.4327, lon: 10.8038 },
+  98:  { n: 'St. Pauli', k: 'STP', f: 'FC St. Pauli', c: '#6B4E3D', s: 'Millerntor-Stadion', city: 'Hamburg', lat: 53.5546, lon: 9.9678 },
+  199: { n: 'Heidenheim', k: 'FCH', f: '1. FC Heidenheim 1846', c: '#E2001A', s: 'Voith-Arena', city: 'Heidenheim', lat: 48.6685, lon: 10.1393 },
+};
+const CURRENT_IDS = [40, 7, 6, 1635, 91, 16, 112, 87, 134, 81, 95, 175, 80, 65, 100, 9, 31, 198];
+const ICONS = {
+  65: 'https://upload.wikimedia.org/wikipedia/commons/0/01/1._FC_Koeln_Logo_2014%E2%80%93.svg',
+  80: 'https://assets.dfb.de/uploads/000/018/232/small_union-Berlin.jpg',
+  81: 'https://upload.wikimedia.org/wikipedia/commons/9/9e/Logo_Mainz_05.svg',
+  6: 'https://upload.wikimedia.org/wikipedia/de/f/f7/Bayer_Leverkusen_Logo.svg',
+  7: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Borussia_Dortmund_logo.svg/960px-Borussia_Dortmund_logo.svg.png',
+  87: 'https://i.imgur.com/KSIk0Eu.png',
+  91: 'https://i.imgur.com/X8NFkOb.png',
+  95: 'https://i.imgur.com/sdE62e2.png',
+  40: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/Logo_FC_Bayern_M%C3%BCnchen_%282002%E2%80%932017%29.svg',
+  9: 'https://upload.wikimedia.org/wikipedia/commons/9/97/FC_Schalke_04_Logo.png',
+  100: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Hamburger_SV_logo.svg',
+  1635: 'https://i.imgur.com/Rpwsjz1.png',
+  112: 'https://i.imgur.com/r3mvi0h.png',
+  31: 'https://upload.wikimedia.org/wikipedia/commons/e/e3/SC_Paderborn_07_Logo.svg',
+  198: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/SV_Elversberg_Logo.svg/500px-SV_Elversberg_Logo.svg.png',
+  134: 'https://upload.wikimedia.org/wikipedia/commons/b/be/SV-Werder-Bremen-Logo.svg',
+  175: 'https://i.imgur.com/gF0PfEl.png',
+  16: 'https://i.imgur.com/v0tkpNx.png',
+};
+
+/* Umriss Deutschland (vereinfacht) + Projektion */
+const GEO = {"path":"M110.8,0.9 L112.3,2.8 L108.4,6.2 L109.0,10.7 L111.7,12.5 L128.4,9.7 L146.5,14.0 L149.0,17.7 L154.5,15.0 L155.7,18.7 L163.5,12.6 L163.0,15.7 L173.5,20.9 L178.4,19.3 L181.8,26.8 L179.6,24.8 L178.8,26.7 L181.8,27.0 L181.5,35.3 L173.4,41.1 L189.0,41.9 L186.1,52.0 L190.3,44.8 L194.2,43.3 L211.1,52.4 L220.9,47.0 L229.6,46.4 L226.6,49.0 L228.1,59.9 L213.3,69.8 L219.2,76.7 L231.8,72.6 L235.3,74.7 L235.3,78.3 L238.7,76.6 L243.9,80.6 L245.1,75.9 L240.5,73.8 L245.5,72.1 L245.4,75.9 L251.4,67.4 L247.0,68.7 L253.8,63.0 L271.5,60.9 L273.1,63.2 L271.9,61.0 L282.5,52.9 L290.4,39.9 L309.7,43.1 L297.6,45.3 L298.9,45.5 L297.3,47.9 L302.1,46.0 L303.1,49.6 L312.2,43.1 L315.5,48.1 L316.0,54.0 L323.9,57.3 L326.5,61.1 L325.3,62.5 L329.6,61.4 L328.1,63.7 L331.3,67.3 L341.8,61.7 L346.6,66.5 L343.9,71.6 L351.3,79.1 L347.4,83.0 L352.3,80.0 L351.0,74.4 L353.6,74.3 L353.3,78.3 L356.9,77.7 L357.1,73.9 L355.2,71.1 L364.7,78.5 L363.2,79.5 L364.6,83.0 L346.6,83.5 L356.8,90.7 L367.4,91.9 L364.5,94.4 L367.0,94.6 L369.3,100.2 L368.3,105.5 L374.7,125.1 L371.6,129.1 L370.2,139.7 L361.3,146.1 L360.4,154.5 L383.0,172.7 L381.3,175.9 L382.6,178.3 L378.2,185.5 L380.0,192.9 L385.6,196.3 L384.3,204.6 L387.5,208.0 L385.9,217.1 L380.7,225.4 L387.3,236.3 L385.6,243.9 L395.9,249.2 L397.3,258.1 L400.0,261.2 L395.7,283.4 L390.2,294.7 L386.1,294.9 L381.8,292.9 L383.5,287.5 L379.5,288.1 L381.1,283.6 L377.0,279.2 L372.4,282.2 L367.9,279.0 L365.9,284.7 L372.6,286.8 L371.3,290.6 L353.1,296.5 L348.6,302.5 L335.4,302.8 L331.7,310.9 L327.8,307.7 L325.7,312.0 L322.2,311.2 L319.9,317.6 L312.8,317.1 L310.4,323.6 L303.9,320.6 L298.5,324.8 L290.2,324.6 L283.6,333.3 L282.0,340.0 L280.1,339.8 L276.2,330.0 L271.5,334.7 L276.4,338.9 L276.4,344.7 L278.9,348.2 L291.6,357.6 L288.3,367.1 L285.3,369.6 L290.8,374.3 L293.4,384.3 L295.9,385.2 L296.6,392.1 L302.0,397.7 L312.9,400.7 L319.3,412.2 L329.0,418.6 L328.9,423.4 L339.0,425.7 L347.9,437.9 L345.8,441.7 L346.8,450.8 L342.9,455.9 L333.4,450.4 L330.4,452.6 L329.3,465.6 L323.9,470.7 L305.6,477.8 L300.6,483.8 L311.4,502.3 L307.5,510.7 L313.3,511.4 L316.0,517.1 L312.0,529.2 L302.6,522.5 L303.8,518.7 L301.9,514.6 L294.1,514.3 L289.8,517.8 L286.7,512.8 L279.0,514.5 L278.8,510.1 L275.3,513.0 L276.8,519.8 L251.8,520.0 L249.4,526.0 L243.1,525.9 L241.0,528.8 L242.5,530.6 L238.9,530.2 L236.0,534.4 L233.8,534.4 L234.8,531.4 L223.0,534.1 L220.8,528.3 L218.0,528.4 L220.5,525.7 L218.9,524.2 L214.1,525.7 L206.5,521.7 L204.9,524.3 L199.2,520.9 L200.9,531.5 L199.3,535.3 L187.8,542.9 L190.2,534.3 L184.5,536.9 L184.3,529.8 L180.2,527.8 L179.1,523.3 L174.8,524.7 L170.5,520.1 L166.7,523.8 L138.6,504.3 L146.3,515.1 L143.8,516.1 L136.3,509.5 L134.1,510.7 L136.9,513.2 L131.9,516.0 L128.3,510.0 L126.6,511.5 L127.8,514.3 L124.8,513.1 L124.9,508.3 L117.8,504.9 L110.6,514.3 L113.7,516.8 L119.5,514.6 L118.5,519.8 L115.7,517.2 L113.0,519.4 L114.3,521.1 L109.5,521.9 L101.8,518.0 L96.8,522.4 L90.5,523.4 L85.1,520.2 L78.5,524.2 L76.9,522.5 L78.6,520.3 L75.8,521.2 L71.6,513.2 L76.5,493.8 L74.1,489.4 L74.5,483.5 L81.8,469.0 L81.3,464.2 L85.8,447.8 L96.8,436.0 L103.0,424.3 L90.2,418.3 L77.0,418.5 L68.7,409.4 L62.1,414.2 L53.6,411.5 L51.8,414.4 L50.7,409.1 L46.0,406.7 L42.3,407.3 L42.0,411.7 L37.8,410.8 L29.0,392.0 L21.1,389.8 L21.5,382.2 L28.2,371.8 L28.7,365.9 L19.2,364.0 L9.9,348.4 L13.9,339.3 L13.0,336.1 L23.4,329.3 L20.4,326.0 L22.0,321.4 L20.0,318.1 L13.1,314.1 L17.8,309.6 L13.2,309.2 L10.8,303.1 L4.0,297.1 L8.8,293.5 L9.2,288.3 L6.3,287.5 L6.9,284.0 L1.4,284.3 L0.0,279.8 L4.3,280.4 L13.1,272.1 L11.9,270.7 L14.0,269.4 L9.6,270.6 L9.0,265.7 L15.7,257.3 L15.2,247.3 L9.6,240.6 L10.8,236.8 L4.0,231.1 L5.8,229.3 L4.0,225.3 L13.0,223.9 L10.3,220.8 L12.5,219.7 L23.8,225.2 L23.2,221.8 L38.0,220.1 L42.1,213.4 L36.1,210.3 L36.2,207.9 L52.3,196.4 L50.6,192.6 L52.7,186.4 L49.5,180.4 L47.1,182.6 L39.0,180.7 L35.5,174.3 L39.2,173.7 L37.2,171.9 L38.1,168.0 L51.5,168.8 L53.4,154.1 L60.7,143.5 L59.2,134.7 L61.7,129.5 L58.2,126.7 L60.2,120.4 L49.2,118.2 L50.8,106.2 L55.1,106.3 L53.2,103.2 L56.2,99.6 L63.1,95.7 L93.7,93.8 L100.5,104.7 L99.7,107.6 L95.8,108.1 L96.2,111.0 L104.0,115.6 L106.8,110.9 L106.8,107.0 L103.0,107.1 L104.8,100.9 L115.5,104.6 L117.3,106.7 L115.7,108.4 L117.9,107.2 L114.1,95.0 L119.5,82.1 L131.6,85.7 L141.0,83.2 L135.1,81.0 L128.8,72.2 L135.9,70.4 L133.5,64.5 L130.5,65.1 L128.2,61.6 L129.5,56.1 L134.5,51.8 L129.9,55.3 L118.3,52.5 L119.4,48.7 L122.9,48.8 L119.5,46.7 L132.0,44.9 L137.7,40.7 L136.2,37.5 L132.4,41.5 L128.2,40.9 L131.9,32.3 L128.5,32.0 L128.9,28.6 L123.0,22.8 L118.7,11.9 L111.1,14.6 L106.5,12.7 L105.2,21.2 L106.0,10.3 L110.8,0.9ZM352.8,69.2 L351.2,69.2 L349.1,73.7 L348.9,70.3 L345.0,72.3 L346.9,66.8 L344.1,62.6 L346.5,61.2 L349.4,66.6 L352.8,69.2ZM329.1,32.1 L327.6,30.8 L322.0,34.7 L323.8,28.6 L318.4,34.7 L322.3,27.7 L330.1,25.9 L327.8,29.4 L329.1,32.1ZM330.9,33.5 L341.1,34.4 L336.3,41.5 L344.9,49.8 L343.1,54.6 L339.6,53.0 L342.1,50.9 L338.1,51.6 L341.2,49.3 L336.8,49.1 L326.8,54.9 L329.6,55.9 L328.6,58.3 L324.1,56.1 L326.0,54.3 L317.5,54.0 L319.5,52.7 L316.4,50.5 L317.0,47.8 L322.8,47.0 L317.9,43.7 L323.1,40.2 L318.3,38.5 L317.7,35.5 L324.7,37.8 L324.4,35.1 L327.5,33.3 L326.2,35.4 L327.9,34.7 L329.4,39.2 L333.5,40.1 L333.3,35.4 L330.9,33.5Z","lonMin":5.872058868408317,"latMax":55.05652618408209,"k":69.71740607653172,"c":0.6266038113644605,"W":400,"H":542.8632907078269};
+
+/* ================= Beispieldaten (Vorschau ohne Internetzugriff) ================= */
+const SNAP = (() => {
+  const team = (id) => ({ teamId: id, teamName: CLUBS[id].f, shortName: CLUBS[id].n, teamIconUrl: ICONS[id] || null });
+  const pair = (s) => s.split(':').map(Number);
+  const m = (id, utc, md, h, a, ft, ht, viewers, goals) => {
+    const results = [];
+    if (ht) { const [x, y] = pair(ht); results.push({ resultTypeID: 1, pointsTeam1: x, pointsTeam2: y }); }
+    if (ft) { const [x, y] = pair(ft); results.push({ resultTypeID: 2, pointsTeam1: x, pointsTeam2: y }); }
+    return {
+      matchID: id, matchDateTimeUTC: utc, leagueSeason: 2026, group: { groupOrderID: md, groupName: `${md}. Spieltag` },
+      team1: team(h), team2: team(a), matchIsFinished: !!ft, matchResults: results, numberOfViewers: viewers || null,
+      goals: (goals || []).map((g, i) => {
+        const [s1, s2] = pair(g[2]);
+        return { goalID: id * 100 + i, matchMinute: g[0], goalGetterName: g[1], scoreTeam1: s1, scoreTeam2: s2, isPenalty: !!g[3], isOwnGoal: !!g[4] };
+      }),
+    };
+  };
+  const md9 = [
+    m(83234, '2026-11-06T19:30:00Z', 9, 100, 87, '3:1', '1:1', 57000, [[11, 'M. Muheim', '1:0'], [44, 'J. Scally', '1:1'], [60, 'Shafiq Nandja', '2:1'], [70, 'A. Grønbæk', '3:1']]),
+    m(83228, '2026-11-07T14:30:00Z', 9, 7, 198, '2:1', '0:0', 81365, [[55, 'F. Nmecha', '1:0'], [71, 'F. Nmecha', '2:0'], [81, 'N. Futkeu', '2:1']]),
+    m(83229, '2026-11-07T14:30:00Z', 9, 1635, 95, '5:2', '3:1', 38292, [[1, 'A. Kade', '0:1'], [34, 'E. Banzuzi', '1:1'], [35, 'C. Nkunku', '2:1'], [46, 'D. Raum', '3:1'], [60, 'Romulo', '4:1'], [66, 'C. Baumgartner', '5:1'], [93, 'Uchenna Ogundu', '5:2']]),
+    m(83233, '2026-11-07T14:30:00Z', 9, 81, 40, '1:2', '0:1', 33305, [[14, 'J. Kimmich', '0:1'], [57, 'Lennart Karl', '0:2'], [93, 'P. Tietz', '1:2']]),
+    m(83236, '2026-11-07T14:30:00Z', 9, 31, 91, '2:2', '1:1', 15000, [[23, 'J. Burkardt', '0:1'], [45, 'R. Obermair', '1:1'], [73, 'M. Pieringer', '2:1', 1], [93, 'J. Burkardt', '2:2']]),
+    m(83230, '2026-11-07T17:30:00Z', 9, 16, 134, '1:0', '1:0', 60058, [[7, 'M. Mittelstädt', '1:0']]),
+    m(83235, '2026-11-08T14:30:00Z', 9, 65, 6, '1:2', '0:1', 50000, [[7, 'A. Garcia', '0:1'], [85, 'P. Schick', '0:2'], [92, 'S. El Mala', '1:2']]),
+    m(83232, '2026-11-08T16:30:00Z', 9, 112, 80, '2:0', '0:0', 33400, [[55, 'R. Khedira', '1:0', 0, 1], [67, 'Y. Suzuki', '2:0']]),
+    m(83231, '2026-11-08T18:30:00Z', 9, 175, 9, '2:1', '2:0', 28369, [[10, 'F. Asllani', '1:0'], [26, 'T. Lemperle', '2:0'], [81, 'J. Adamu', '2:1']]),
+  ];
+  const md10 = [
+    m(83237, '2026-11-20T19:30:00Z', 10, 40, 65),
+    m(83238, '2026-11-21T14:30:00Z', 10, 6, 31),
+    m(83239, '2026-11-21T14:30:00Z', 10, 91, 175),
+    m(83241, '2026-11-21T14:30:00Z', 10, 80, 1635),
+    m(83242, '2026-11-21T14:30:00Z', 10, 87, 7),
+    m(83245, '2026-11-21T14:30:00Z', 10, 198, 112),
+    m(83244, '2026-11-21T17:30:00Z', 10, 9, 16),
+    m(83240, '2026-11-22T14:30:00Z', 10, 95, 81),
+    m(83243, '2026-11-22T16:30:00Z', 10, 134, 100),
+  ];
+  const rows = '40|9|6|3|0|29|9|20|21;7|9|6|3|0|16|7|9|21;112|9|6|1|2|20|10|10|19;1635|9|6|0|3|27|13|14|18;6|9|5|1|3|20|17|3|16;134|9|4|3|2|17|15|2|15;198|9|4|1|4|17|18|-1|13;16|9|4|0|5|15|15|0|12;175|9|4|0|5|16|17|-1|12;91|9|3|3|3|15|20|-5|12;100|9|4|0|5|10|20|-10|12;81|9|3|1|5|18|19|-1|10;31|9|2|4|3|8|11|-3|10;95|9|2|3|4|20|20|0|9;65|9|2|3|4|10|14|-4|9;80|9|1|4|4|7|21|-14|7;9|9|1|3|5|5|11|-6|6;87|9|1|1|7|12|25|-13|4';
+  const table = rows.split(';').map((r) => {
+    const [id, matches, won, draw, lost, goals, opponentGoals, goalDiff, points] = r.split('|').map(Number);
+    return { teamInfoId: id, teamName: CLUBS[id].f, shortName: CLUBS[id].n, teamIconUrl: ICONS[id] || null, matches, won, draw, lost, goals, opponentGoals, goalDiff, points };
+  });
+  const byId = {};
+  [...md9, ...md10].forEach((x) => { byId[x.matchID] = x; });
+  return { current: 9, season: 2026, matches: { 9: md9, 10: md10 }, table, byId };
+})();
+
+/* ================= Zustand & Speicher ================= */
+const S = {
+  view: 'spiele', matchday: null, cache: {}, table: null, teams: null, demo: false,
+  loading: true, error: null, sheet: null, ready: false,
+  user: null, cloudReady: false, cloudError: null, authBusy: false, authMsg: null,
+  leagues: null, league: null, board: {}, ligaMsg: null, confirmLeave: null, pendingJoin: null,
+  bSeason: SEASON, currentMd: null, spieleMode: 'spiele', tables: {}, tableLoading: {}, tableErrors: {},
+  clubView: null, clubPicking: false, clubCache: {}, clubLoading: {}, histSeason: SEASON, manualMsg: null, chipScroll: 0, nearby: null, nearError: null,
+};
+let store = { visits: {}, fav: 0 };
+try { const raw = localStorage.getItem(STORE_KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) { /* kein Speicher verfügbar */ }
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) { /* ignorieren */ } }
+
+/* ================= Helfer ================= */
+const $ = (sel, el = document) => el.querySelector(sel);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clubName = (id, fallback) => CLUBS[id]?.n ?? fallback ?? '?';
+const clubColor = (id) => CLUBS[id]?.c ?? ['#4F8BFF', '#9B5CFF', '#2CC5D2', '#FF9F43', '#FF5CA8', '#6366F1'][Math.abs(id) % 6];
+const fmtDay = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+const fmtTime = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TZ });
+const fmtFull = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: TZ });
+const fmtDayKey = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: TZ });
+const fmtD = new Intl.DateTimeFormat('de-DE', { day: 'numeric', timeZone: TZ });
+const fmtMon = new Intl.DateTimeFormat('de-DE', { month: 'short', timeZone: TZ });
+const fmtY = new Intl.DateTimeFormat('de-DE', { year: 'numeric', timeZone: TZ });
+const fmtWd = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: TZ });
+const nf = new Intl.NumberFormat('de-DE');
+const nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+const ICON = {
+  ball: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5l3.8 2.8-1.4 4.5H9.6l-1.4-4.5z"/><path d="M12 3v4.5M15.8 10.3l4.4-1.6M14.4 14.8l2.6 3.9M9.6 14.8L7 18.7M8.2 10.3L3.8 8.7"/>',
+  list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/>',
+  map: '<path d="M9 4L3 6.5V20l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>',
+  book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/>',
+  people: '<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3.3 2.7-5 6-5s6 1.7 6 5M15.5 14.2c3 0 5.5 1.5 5.5 4.8"/>',
+  ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 7v2M14 11v2M14 15v2"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M9.5 17h5"/>',
+  flame: '<path d="M12 21c-3.9 0-7-2.8-7-6.5 0-3 2-5 3.5-6.5.3 2 1.3 3 2.5 3.5C11 8 12 5 14.5 3c.5 3 4.5 5.5 4.5 11 0 4-3.1 7-7 7z"/>',
+  zero: '<circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="3.3" ry="5"/>',
+  bus: '<rect x="4" y="4" width="16" height="13" rx="3"/><path d="M4 11h16M7.5 20v-3M16.5 20v-3"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8-4.3-4.1 5.9-.9z"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  check: '<path d="M12 2.5l2.3 1.7 2.8-.2 1 2.6 2.4 1.5-.7 2.8 1 2.6-2.2 1.8-.4 2.8-2.8.5-1.8 2.2-2.6-1-2.8.7-1.5-2.4-2.6-1 .2-2.8L2.5 12l1.7-2.3-.2-2.8 2.6-1 1.5-2.4 2.8.7z" fill="currentColor" stroke="none"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8" style="stroke:var(--check, #04140C)" stroke-width="2.2"/>',
+  bookmark: '<path d="M6 3h12v18l-6-4.5L6 21z" fill="currentColor"/>',
+  bookmarkLine: '<path d="M6 3h12v18l-6-4.5L6 21z"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  close: '<path d="M6 6l12 12M18 6L6 18"/>',
+  left: '<path d="M15 5l-7 7 7 7"/>',
+  right: '<path d="M9 5l7 7-7 7"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  goal: '<path d="M3 20V6h18v14"/><path d="M3 10h18M3 14h18M9 6v14M15 6v14" opacity=".5"/>',
+  chart: '<path d="M5 20V11M12 20V5M19 20v-7"/>',
+  route: '<path d="M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/><path d="M8 17h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>',
+  shield: '<path d="M12 3l7.5 3v5.5c0 4.4-3.2 8.3-7.5 9.5-4.3-1.2-7.5-5.1-7.5-9.5V6z"/><path d="M12 7.5v9M8.5 11.5h7" opacity=".55"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>',
+  near: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
+};
+const ic = (name, size = 22, width = 1.9) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ''}</svg>`;
+
+/* Wikimedia-SVG-Logos → PNG-Vorschaubild */
+function pngURL(raw) {
+  if (!raw) return null;
+  const isSvg = /\.svg$/i.test(raw) && raw.includes('upload.wikimedia.org/wikipedia/') && !raw.includes('/thumb/');
+  if (!isSvg) return raw;
+  const parts = raw.split('/');
+  const w = parts.indexOf('wikipedia');
+  if (w < 0 || parts.length <= w + 2) return raw;
+  const file = parts[parts.length - 1];
+  parts.splice(w + 2, 0, 'thumb');
+  return `${parts.join('/')}/500px-${file}.png`;
+}
+function initials(name) {
+  const words = String(name).split(' ').filter((w) => /^\p{L}/u.test(w));
+  return (words.length >= 2 ? words.slice(0, 2).map((w) => w[0]).join('') : String(name).slice(0, 3)).toUpperCase();
+}
+function logo(teamId, name, icon, size) {
+  const url = pngURL(icon || ICONS[teamId]);
+  return `<span class="logo" style="--s:${size}px;--c:${clubColor(teamId)}"><span class="ini">${esc(CLUBS[teamId]?.k || initials(name))}</span>${
+    url ? `<img src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}</span>`;
+}
+document.addEventListener('load', (e) => { if (e.target.tagName === 'IMG' && e.target.parentNode?.classList?.contains('logo')) e.target.parentNode.classList.add('ok'); }, true);
+document.addEventListener('error', (e) => { if (e.target.tagName === 'IMG') e.target.remove(); }, true);
+
+/* ================= Echte Karte (MapLibre + OpenFreeMap, kostenlos & ohne API-Key) ================= */
+const MAPLIBRE = {
+  css: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css',
+  cssSri: 'sha384-MinO0mNliZ3vwppuPOUnGa+iq619pfMhLVUXfC4LHwSCvF9H+6P/KO4Q7qBOYV5V',
+  js: 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js',
+  jsSri: 'sha384-SYKAG6cglRMN0RVvhNeBY0r3FYKNOJtznwA0v7B5Vp9tr31xAHsZC0DqkQ/pZDmj',
+};
+const MAP_STYLES = {
+  dunkel: 'https://tiles.openfreemap.org/styles/fiord',
+  hell: 'https://tiles.openfreemap.org/styles/liberty',
+};
+let mapLibPromise = null;
+function loadMapLib() {
+  if (window.maplibregl) return Promise.resolve();
+  if (mapLibPromise) return mapLibPromise;
+  mapLibPromise = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = MAPLIBRE.css; css.integrity = MAPLIBRE.cssSri; css.crossOrigin = 'anonymous';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = MAPLIBRE.js; js.integrity = MAPLIBRE.jsSri; js.crossOrigin = 'anonymous';
+    js.onload = () => resolve();
+    js.onerror = () => { mapLibPromise = null; reject(new Error('Kartenbibliothek nicht geladen')); };
+    document.head.appendChild(js);
+  });
+  return mapLibPromise;
+}
+const iconFor = (id) => S.teams?.find((t) => t.teamId === id)?.teamIconUrl || ICONS[id];
+const visitedHomeIds = () => new Set(allVisits().filter((v) => v.attended).map((v) => v.homeId));
+const mapStyleKey = () => (store.mapStyle === 'hell' ? 'hell' : 'dunkel');
+
+async function mountMap() {
+  const el = $('#lmap');
+  if (!el) return;
+  try { await loadMapLib(); } catch (e) { S.mapFailed = true; render(); return; }
+  if (!el.isConnected) return;
+  if (S.lmap) { S.lmap.remove(); S.lmap = null; }
+  let map;
+  try {
+    map = new maplibregl.Map({
+      container: el,
+      style: MAP_STYLES[mapStyleKey()],
+      bounds: [[5.6, 47.2], [15.2, 55.1]],
+      fitBoundsOptions: { padding: 30 },
+      attributionControl: { compact: true },
+      cooperativeGestures: true,
+      dragRotate: false,
+      locale: {
+        'CooperativeGesturesHandler.MobileHelpText': 'Mit zwei Fingern die Karte bewegen',
+        'CooperativeGesturesHandler.MacHelpText': '⌘ + Scrollen zum Zoomen',
+        'CooperativeGesturesHandler.WindowsHelpText': 'Strg + Scrollen zum Zoomen',
+      },
+    });
+  } catch (e) { S.mapFailed = true; render(); return; }   // z. B. kein WebGL
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  map.addControl(new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true } }), 'top-right');
+  const visited = visitedHomeIds();
+  stadiumClubs().forEach((id) => {
+    const c = CLUBS[id];
+    const pin = document.createElement('button');
+    pin.className = `mpin${visited.has(id) ? ' v' : ''}`;
+    pin.setAttribute('aria-label', c.s);
+    pin.innerHTML = logo(id, c.n, iconFor(id), 28);
+    pin.addEventListener('click', (ev) => { ev.stopPropagation(); S.sheet = { type: 'stadium', id }; renderSheet(); });
+    new maplibregl.Marker({ element: pin }).setLngLat([c.lon, c.lat]).addTo(map);
+  });
+  if (S.nearby) {
+    const me = document.createElement('div');
+    me.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#4F8BFF;border:3px solid #fff;box-shadow:0 0 0 6px rgba(79,139,255,.3)';
+    new maplibregl.Marker({ element: me }).setLngLat([S.nearby.lon, S.nearby.lat]).addTo(map);
+  }
+  if (S.mapView) map.jumpTo(S.mapView);
+  map.on('moveend', () => { S.mapView = { center: map.getCenter(), zoom: map.getZoom() }; });
+  S.lmap = map;
+}
+function setMapStyle(key) {
+  store.mapStyle = key; save();
+  if (S.lmap) S.lmap.setStyle(MAP_STYLES[key]);
+  document.querySelectorAll('[data-act="map-style"]').forEach((b) => b.classList.toggle('on', b.dataset.style === key));
+}
+
+/* ================= Spiel-Logik ================= */
+function kickoff(m) {
+  if (m.matchDateTimeUTC) return new Date(m.matchDateTimeUTC.endsWith('Z') ? m.matchDateTimeUTC : m.matchDateTimeUTC + 'Z');
+  if (m.matchDateTime) return new Date(m.matchDateTime);
+  return null;
+}
+function matchState(m) {
+  if (m.matchIsFinished) return 'finished';
+  const k = kickoff(m);
+  if (!k) return 'upcoming';
+  const now = Date.now();
+  if (now < k.getTime()) return 'upcoming';
+  if (now < k.getTime() + 2.5 * 3600e3) return 'live';
+  return 'finished';
+}
+function result(m, type) {
+  const r = (m.matchResults || []).find((x) => x.resultTypeID === type);
+  return r && r.pointsTeam1 != null && r.pointsTeam2 != null ? [r.pointsTeam1, r.pointsTeam2] : null;
+}
+function sortedGoals(m) {
+  return [...(m.goals || [])].sort((a, b) => {
+    const l = (a.scoreTeam1 || 0) + (a.scoreTeam2 || 0);
+    const r = (b.scoreTeam1 || 0) + (b.scoreTeam2 || 0);
+    return l === r ? (a.matchMinute || 0) - (b.matchMinute || 0) : l - r;
+  });
+}
+function currentScore(m) {
+  const fin = result(m, 2);
+  if (fin) return fin;
+  if (matchState(m) === 'upcoming') return null;
+  const last = sortedGoals(m).pop();
+  return last ? [last.scoreTeam1 || 0, last.scoreTeam2 || 0] : [0, 0];
+}
+function stadiumOf(m) {
+  const c = CLUBS[m.team1.teamId];
+  return {
+    name: c?.s ?? m.location?.locationStadium ?? `Stadion von ${m.team1.teamName || 'Heimteam'}`,
+    city: c?.city ?? m.location?.locationCity ?? '',
+  };
+}
+const teamName = (t) => clubName(t.teamId, t.shortName || t.teamName);
+const fullName = (t) => CLUBS[t.teamId]?.f ?? t.teamName;
+
+function statusHTML(m) {
+  const st = matchState(m);
+  if (st === 'live') return '<span class="live">LIVE</span>';
+  return `<span class="status">${st === 'finished' ? 'Endstand' : 'Anstoß'}</span>`;
+}
+
+/* ================= Stadionheft (Besuche) ================= */
+function visitFromMatch(m, attended) {
+  const st = stadiumOf(m);
+  const fin = m.matchIsFinished ? result(m, 2) : null;
+  return {
+    matchID: m.matchID, kickoff: (kickoff(m) || new Date()).toISOString(), season: m.leagueSeason ?? SEASON,
+    matchday: m.group?.groupOrderID ?? 0, comp: compOf(m),
+    homeId: m.team1.teamId, homeName: teamName(m.team1), homeIcon: m.team1.teamIconUrl || null,
+    awayId: m.team2.teamId, awayName: teamName(m.team2), awayIcon: m.team2.teamIconUrl || null,
+    hg: fin ? fin[0] : null, ag: fin ? fin[1] : null, stadium: st.name, city: st.city,
+    attended, note: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+}
+function updateVisit(v, m) {
+  const k = kickoff(m);
+  if (k) v.kickoff = k.toISOString();
+  if (m.matchIsFinished) { const fin = result(m, 2); if (fin) { v.hg = fin[0]; v.ag = fin[1]; } }
+}
+const allVisits = () => Object.values(store.visits).sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff));
+const isPast = (v) => new Date(v.kickoff).getTime() < Date.now();
+const hasScore = (v) => v.hg != null && v.ag != null;
+
+function bookStats(visits, fav) {
+  const s = { games: visits.length, scored: 0, goals: 0, stadiums: new Set(visits.map((v) => v.stadium)).size,
+    complete: new Set(visits.map((v) => v.homeId).filter((id) => CURRENT_IDS.includes(id))).size,
+    big: 0, nil: 0, favGames: 0, favAway: 0, w: 0, d: 0, l: 0 };
+  for (const v of visits) {
+    const home = fav && v.homeId === fav;
+    const away = fav && v.awayId === fav;
+    if (home || away) s.favGames++;
+    if (away) s.favAway++;
+    if (!hasScore(v)) continue;
+    const total = v.hg + v.ag;
+    s.scored++; s.goals += total;
+    if (total >= 6) s.big++;
+    if (total === 0) s.nil++;
+    if (!home && !away) continue;
+    const own = home ? v.hg : v.ag;
+    const other = home ? v.ag : v.hg;
+    if (own > other) s.w++; else if (own === other) s.d++; else s.l++;
+  }
+  s.avg = s.scored ? s.goals / s.scored : 0;
+  return s;
+}
+function badges(s) {
+  const t = CURRENT_IDS.length;
+  return [
+    { t: 'Anpfiff', d: 'Erstes Spiel im Stadion', i: 'ball', p: s.games, g: 1 },
+    { t: 'Stammgast', d: '10 Spiele besucht', i: 'people', p: s.games, g: 10 },
+    { t: 'Dauerkarte', d: '25 Spiele besucht', i: 'ticket', p: s.games, g: 25 },
+    { t: 'Groundhopper', d: '5 verschiedene Stadien', i: 'pin', p: s.stadiums, g: 5 },
+    { t: 'Komplett', d: `Alle ${t} Bundesliga-Stadien`, i: 'trophy', p: s.complete, g: t },
+    { t: 'Torfestival', d: 'Ein Spiel mit 6+ Toren', i: 'flame', p: s.big, g: 1 },
+    { t: 'Nullnummer', d: 'Ein 0:0 überstanden', i: 'zero', p: s.nil, g: 1 },
+    { t: 'Auswärtsfahrer', d: '5 Auswärtsspiele deines Vereins', i: 'bus', p: s.favAway, g: 5 },
+    { t: 'Glücksbringer', d: '5 Siege deines Vereins live', i: 'star', p: s.w, g: 5 },
+  ];
+}
+
+/* ================= Daten laden ================= */
+async function api(path) {
+  const res = await fetch(`${API}/${path}`, { headers: { Accept: 'application/json' }, cache: 'no-store' });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+const data = {
+  matches: (season, md) => (S.demo ? Promise.resolve(season === SNAP.season ? (SNAP.matches[md] || []) : []) : api(`getmatchdata/${LEAGUE}/${season}/${md}`)),
+  match: (id) => (S.demo ? Promise.resolve(SNAP.byId[id] || null) : api(`getmatchdata/${id}`)),
+  table: (season) => (S.demo ? Promise.resolve(season === SNAP.season ? SNAP.table : []) : api(`getbltable/${LEAGUE}/${season}`)),
+  teams: () => (S.demo ? Promise.resolve(CURRENT_IDS.map((id) => ({ teamId: id, teamName: CLUBS[id].f, teamIconUrl: ICONS[id] }))) : api(`getavailableteams/${LEAGUE}/${SEASON}`)),
+};
+
+async function start() {
+  S.loading = true; S.error = null; S.ready = false; render();
+  try {
+    const g = await api(`getcurrentgroup/${LEAGUE}`);
+    S.demo = false;
+    S.matchday = Math.min(34, Math.max(1, g.groupOrderID || 1));
+    S.currentMd = S.matchday;
+  } catch (e) {
+    if (navigator.onLine === false) { S.loading = false; S.error = 'Du bist offline. Verbinde dich mit dem Internet und versuch es nochmal.'; render(); return; }
+    S.demo = true;              // z. B. in der Vorschau, wo keine externen Abfragen erlaubt sind
+    S.matchday = SNAP.current;
+    S.currentMd = SNAP.current;
+  }
+  S.ready = true;
+  if (cloudConfigured()) initCloud();
+  if (S.view !== 'spiele') render();
+  await loadMatchday(S.matchday);
+  data.teams().then((t) => { S.teams = t; if (S.view === 'stadien') render(); }).catch(() => {});
+  refreshOpenResults();
+}
+
+const ck = (season, md) => `${season}-${md}`;
+async function loadMatchday(md, quiet = false) {
+  const season = S.bSeason;
+  const key = ck(season, md);
+  if (!S.cache[key] && !quiet) { S.loading = true; if (S.view === 'spiele') render(); }
+  try {
+    S.cache[key] = await data.matches(season, md);
+    S.error = null;
+  } catch (e) {
+    if (!S.cache[key]) S.error = 'Die Spiele konnten nicht geladen werden. Prüfe deine Internetverbindung.';
+  }
+  S.loading = false;
+  if (S.matchday === md && S.bSeason === season && S.view === 'spiele') render();
+}
+function setSeason(season) {
+  if (season === S.bSeason) return;
+  S.bSeason = season;
+  S.matchday = season === SEASON ? (S.currentMd || 1) : 1;
+  S.chipScroll = 0;
+  render();
+  loadMatchday(S.matchday);
+  if (S.spieleMode === 'tabelle') loadTable(season);
+}
+
+function setMatchday(md) {
+  md = Math.min(34, Math.max(1, md));
+  if (md === S.matchday) return;
+  const chips = $('#chips');
+  if (chips) S.chipScroll = chips.scrollLeft;
+  S.matchday = md;
+  render();
+  loadMatchday(md);
+}
+
+async function loadTable(season) {
+  if (S.tableLoading[season]) return;
+  S.tableLoading[season] = true;
+  try { S.tables[season] = await data.table(season); delete S.tableErrors[season]; }
+  catch (e) { S.tableErrors[season] = 'Die Tabelle konnte nicht geladen werden.'; }
+  S.tableLoading[season] = false;
+  if (S.view === 'spiele' || S.view === 'verein') render();
+}
+
+async function refreshOpenResults() {
+  if (S.demo) return;
+  const open = allVisits().filter((v) => !hasScore(v) && new Date(v.kickoff).getTime() + 2 * 3600e3 < Date.now()).slice(0, 20);
+  let changed = false;
+  for (const v of open) {
+    try {
+      const m = await data.match(v.matchID);
+      if (m) { updateVisit(v, m); if (hasScore(v)) { persistVisit(v); changed = true; } }
+    } catch (e) { /* später nochmal */ }
+  }
+  if (changed && S.view === 'heft') render();
+}
+
+/* Live-Spiele jede Minute aktualisieren */
+setInterval(async () => {
+  if (S.demo || document.hidden) return;
+  const list = S.bSeason === SEASON ? (S.cache[ck(SEASON, S.matchday)] || []) : [];
+  if (list.some((m) => matchState(m) === 'live')) await loadMatchday(S.matchday, true);
+  if (S.sheet?.type === 'match' && matchState(S.sheet.match) === 'live') {
+    try { const fresh = await data.match(S.sheet.match.matchID); if (fresh) { S.sheet.match = fresh; renderSheet(); } } catch (e) { /* egal */ }
+  }
+}, 60000);
+
+/* ================= Ansichten ================= */
+const loadingHTML = '<div class="loading"><div class="spinner" role="status" aria-label="Lädt"></div></div>';
+const demoHTML = () => (S.demo ? `<div class="demo">${ic('info', 18)}<div><b>Vorschau mit Beispieldaten</b> vom 9. und 10. Spieltag. In der gehosteten Version kommen alle 34 Spieltage live von OpenLigaDB.</div></div>` : '');
+const errorHTML = (msg) => `<div class="card empty"><h3>Keine Verbindung</h3><p>${esc(msg)}</p><button class="secondary press" style="width:auto;padding:12px 18px" data-act="retry">Nochmal versuchen</button></div>`;
+
+function matchCard(m) {
+  const v = store.visits[m.matchID];
+  const sc = currentScore(m);
+  const k = kickoff(m);
+  const center = sc ? `<div class="score">${sc[0]} : ${sc[1]}</div>` : `<div class="time">${k ? fmtTime.format(k) : '–:–'}</div>`;
+  const mark = v ? `<span class="mark ${v.attended ? 'att' : 'plan'}">${ic(v.attended ? 'check' : 'bookmark', 16)}</span>` : '';
+  return `<button class="match card press${v?.attended ? ' hl' : ''}" data-act="open" data-id="${m.matchID}" aria-label="${esc(teamName(m.team1))} gegen ${esc(teamName(m.team2))}">
+    <div class="team">${logo(m.team1.teamId, teamName(m.team1), m.team1.teamIconUrl, 46)}<span class="team-name">${esc(teamName(m.team1))}</span></div>
+    <div class="mid">${center}${statusHTML(m)}</div>
+    <div class="team">${logo(m.team2.teamId, teamName(m.team2), m.team2.teamIconUrl, 46)}<span class="team-name">${esc(teamName(m.team2))}</span></div>
+    ${mark}</button>`;
+}
+
+function viewSpiele() {
+  const seasonSel = `<select id="bseason" aria-label="Saison">${HISTORY_SEASONS.map((x) => `<option value="${x}"${x === S.bSeason ? ' selected' : ''}>${seasonLabel(x)}</option>`).join('')}</select>`;
+  const seg = `<div class="seg" role="tablist"><button class="press${S.spieleMode === 'spiele' ? ' on' : ''}" data-act="spiele-mode" data-mode="spiele" role="tab">Spieltage</button><button class="press${S.spieleMode === 'tabelle' ? ' on' : ''}" data-act="spiele-mode" data-mode="tabelle" role="tab">Tabelle</button></div>`;
+  const top = `<header class="top"><h1>Bundesliga</h1>${seasonSel}</header>${demoHTML()}${seg}`;
+  if (S.spieleMode === 'tabelle') return top + tableBody(S.bSeason);
+  const md = S.matchday;
+  const chips = Array.from({ length: 34 }, (_, i) => i + 1)
+    .map((d) => `<button class="chip press${d === md ? ' on' : ''}" data-act="md" data-md="${d}" aria-label="${d}. Spieltag"${d === md ? ' aria-current="true"' : ''}>${d}</button>`).join('');
+  const head = `${top}
+    <div class="md-head">
+      <button class="round press" data-act="md-prev" aria-label="Vorheriger Spieltag"${!md || md <= 1 ? ' disabled' : ''}>${ic('left', 20, 2.4)}</button>
+      <div class="md-title">${md ? `${md}. Spieltag` : 'Spieltag'}</div>
+      <button class="round press" data-act="md-next" aria-label="Nächster Spieltag"${!md || md >= 34 ? ' disabled' : ''}>${ic('right', 20, 2.4)}</button>
+    </div>
+    <div class="chips" id="chips">${chips}</div>`;
+
+  const list = md ? S.cache[ck(S.bSeason, md)] : null;
+  if (!list) {
+    if (S.error) return head + errorHTML(S.error);
+    return head + loadingHTML;
+  }
+  if (!list.length) {
+    return head + `<div class="card empty"><h3>Keine Spiele</h3><p>${S.demo ? 'In der Vorschau gibt es nur den 9. und 10. Spieltag. Live sind alle Spieltage verfügbar.' : 'Für diesen Spieltag sind noch keine Spiele angesetzt.'}</p></div>`;
+  }
+  const groups = new Map();
+  [...list].sort((a, b) => (kickoff(a) || 0) - (kickoff(b) || 0)).forEach((m) => {
+    const k = kickoff(m);
+    const key = k ? fmtDayKey.format(k) : 'tba';
+    if (!groups.has(key)) groups.set(key, { title: k ? fmtDay.format(k) : 'Termin offen', items: [] });
+    groups.get(key).items.push(m);
+  });
+  const days = [...groups.values()].map((g) => `<section class="day"><div class="day-title">${esc(g.title)}</div>${g.items.map(matchCard).join('')}</section>`).join('');
+  return head + days;
+}
+
+function zoneColor(pos) {
+  if (pos <= 4) return 'var(--accent)';
+  if (pos === 5) return '#4F8BFF';
+  if (pos === 6) return '#2CC5D2';
+  if (pos === 16) return '#FF9F43';
+  if (pos >= 17) return 'var(--live)';
+  return 'transparent';
+}
+
+function tableBody(season) {
+  const head = '';
+  const t = S.tables[season];
+  if (!t) {
+    if (S.tableErrors[season]) return errorHTML(S.tableErrors[season]);
+    if (S.ready) loadTable(season);
+    return loadingHTML;
+  }
+  if (!t.length) return `<div class="card empty"><h3>Keine Tabelle</h3><p>${S.demo ? 'In der Vorschau gibt es nur die aktuelle Saison.' : 'Für diese Saison gibt es keine Tabelle.'}</p></div>`;
+  const rows = t.map((e, i) => {
+    const pos = i + 1;
+    const fav = e.teamInfoId === store.fav;
+    const name = clubName(e.teamInfoId, e.shortName || e.teamName);
+    return `<div class="row${fav ? ' fav' : ''}">
+      <div class="pos"><i class="zone" style="--z:${zoneColor(pos)}"></i>${pos}</div>
+      ${logo(e.teamInfoId, name, e.teamIconUrl, 26)}
+      <div class="name">${esc(name)}${fav ? ' <span style="color:var(--accent)">♥</span>' : ''}</div>
+      <div class="num">${e.matches}</div>
+      <div class="num">${e.goalDiff > 0 ? '+' : ''}${e.goalDiff}</div>
+      <div class="pts">${e.points}</div></div>`;
+  }).join('');
+  const legend = [['Champions League', 1], ['Europa League', 5], ['Conference League', 6], ['Relegation', 16], ['Abstieg', 17]]
+    .map(([t, p]) => `<span><i style="--z:${zoneColor(p)}"></i>${t}</span>`).join('');
+  return head + `<div class="card table"><div class="row head"><div style="text-align:right">#</div><div></div><div>Verein</div><div class="num">Sp</div><div class="num">Diff</div><div style="text-align:right">Pkt</div></div>${rows}</div>
+    <div class="legend">${legend}</div><div class="credit">Daten: OpenLigaDB</div>`;
+}
+
+function stadiumClubs() {
+  const ids = S.teams?.length ? S.teams.map((t) => t.teamId).filter((id) => CLUBS[id]) : CURRENT_IDS;
+  return ids;
+}
+function project(lat, lon) { return [(lon - GEO.lonMin) * GEO.c * GEO.k, (GEO.latMax - lat) * GEO.k]; }
+function distanceKm(a, b) {
+  const R = 6371, rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function viewStadien() {
+  const ids = stadiumClubs();
+  const attended = allVisits().filter((v) => v.attended);
+  const visited = new Set(attended.map((v) => v.homeId));
+  const count = ids.filter((id) => visited.has(id)).length;
+  const frac = ids.length ? count / ids.length : 0;
+  const C = 2 * Math.PI * 20;
+  const pins = ids.map((id) => {
+    const c = CLUBS[id];
+    const [x, y] = project(c.lat, c.lon);
+    const v = visited.has(id);
+    return `<g class="pin${v ? ' v' : ''}" data-act="stadium" data-id="${id}" transform="translate(${x.toFixed(1)} ${y.toFixed(1)})" role="button" aria-label="${esc(c.s)}">
+      ${v ? '<circle class="glow" r="14"/>' : ''}<circle class="dot" r="9" fill="${c.c}"/><text>${c.k}</text></g>`;
+  }).join('');
+  const order = [...ids];
+  if (S.nearby) order.sort((a, b) => distanceKm(S.nearby, CLUBS[a]) - distanceKm(S.nearby, CLUBS[b]));
+  else order.sort((a, b) => (visited.has(b) - visited.has(a)) || CLUBS[a].s.localeCompare(CLUBS[b].s, 'de'));
+  const items = order.map((id) => {
+    const c = CLUBS[id];
+    const v = visited.has(id);
+    const dist = S.nearby ? ` · ${nf.format(Math.round(distanceKm(S.nearby, c)))} km` : '';
+    return `<button class="item press" data-act="stadium" data-id="${id}">${logo(id, c.n, ICONS[id], 34)}
+      <div class="grow"><div class="t">${esc(c.s)}</div><div class="s">${esc(c.n)} · ${esc(c.city)}${dist}</div></div>
+      <span class="tag${v ? ' ok' : ''}">${v ? 'Besucht' : 'Offen'}</span></button>`;
+  }).join('');
+  return `<header class="top"><h1>Stadien</h1><span class="pill">${count}/${ids.length}</span></header>
+    <div class="card progress">
+      <svg class="ring" viewBox="0 0 48 48"><circle class="bg" cx="24" cy="24" r="20" fill="none" stroke-width="6"/>
+        ${frac > 0 ? `<circle class="fg" cx="24" cy="24" r="20" fill="none" stroke-width="6" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}"/>` : ''}</svg>
+      <div><b>${count} von ${ids.length} Stadien</b><span class="muted" style="font-size:13px">${count === ids.length && count ? 'Alle Bundesliga-Stadien besucht!' : 'Grün markiert = schon dort gewesen'}</span></div>
+    </div>
+    ${!S.demo && !S.mapFailed
+      ? `<div class="card map-card"><div class="map-tools">${['dunkel', 'hell'].map((k) => `<button class="press${mapStyleKey() === k ? ' on' : ''}" data-act="map-style" data-style="${k}">${k === 'dunkel' ? 'Dunkel' : 'Hell'}</button>`).join('')}</div><div id="lmap" class="lmap" role="region" aria-label="Karte der Bundesliga-Stadien"></div></div>`
+      : `<div class="card map-card"><svg viewBox="-12 -12 ${GEO.W + 24} ${Math.round(GEO.H) + 24}" role="img" aria-label="Karte der Bundesliga-Stadien">
+      <path class="de" d="${GEO.path}"/>${pins}</svg></div>`}
+    <section class="section">
+      <div class="section-head"><h2>Alle Stadien</h2><button class="btn-ghost press" data-act="near">${S.nearby ? 'Nach Status sortieren' : 'In meiner Nähe'}</button></div>
+      ${S.nearError ? `<div class="demo">${esc(S.nearError)}</div>` : ''}
+      <div class="card list">${items}</div>
+    </section>`;
+}
+
+function visitRow(v, act = 'open-visit') {
+  const k = new Date(v.kickoff);
+  const sc = hasScore(v);
+  const hw = sc && v.hg > v.ag, aw = sc && v.ag > v.hg;
+  return `<button class="visit card press" data-act="${act}" data-id="${v.matchID}">
+    <div class="date"><b>${fmtD.format(k)}</b><span>${fmtMon.format(k).replace('.', '')}</span><small>${fmtY.format(k)}</small></div>
+    <div class="vsep"></div>
+    <div class="lines">
+      <div class="line${hw ? ' w' : ''}">${logo(v.homeId, v.homeName, v.homeIcon, 22)}<span class="n">${esc(v.homeName)}</span><span class="g">${sc ? v.hg : '–'}</span></div>
+      <div class="line${aw ? ' w' : ''}">${logo(v.awayId, v.awayName, v.awayIcon, 22)}<span class="n">${esc(v.awayName)}</span><span class="g">${sc ? v.ag : '–'}</span></div>
+      <div class="where">${v.comp && v.comp !== 'bl1' ? compChip(v.comp) : ''}${ic('pin', 14)}${esc(v.stadium)}</div>
+    </div></button>`;
+}
+
+function viewHeft() {
+  const visits = allVisits();
+  const attended = visits.filter((v) => v.attended);
+  const planned = visits.filter((v) => !v.attended && !isPast(v)).reverse();
+  const confirm = visits.filter((v) => !v.attended && isPast(v));
+  const s = bookStats(attended, store.fav);
+  const bs = badges(s);
+  const won = bs.filter((b) => b.p >= b.g).length;
+  const options = ['<option value="0">Keiner</option>']
+    .concat(Object.entries(CLUBS).sort((a, b) => a[1].f.localeCompare(b[1].f, 'de'))
+      .map(([id, c]) => `<option value="${id}"${Number(id) === store.fav ? ' selected' : ''}>${esc(c.f)}</option>`)).join('');
+  const fav = CLUBS[store.fav];
+  const favIcon = visits.find((v) => v.homeId === store.fav)?.homeIcon || visits.find((v) => v.awayId === store.fav)?.awayIcon;
+
+  let html = `<header class="top"><h1>Mein Heft</h1><span class="pill">${attended.length} Spiele</span></header>${cloudCardHTML()}
+    <div class="stats">
+      <div class="card stat">${ic('ticket')}<b>${s.games}</b><span>Spiele</span></div>
+      <div class="card stat">${ic('pin')}<b>${s.stadiums}</b><span>Stadien</span></div>
+      <div class="card stat">${ic('ball')}<b>${s.goals}</b><span>Tore gesehen</span></div>
+      <div class="card stat">${ic('chart')}<b>${nf1.format(s.avg)}</b><span>Tore pro Spiel</span></div>
+    </div>
+    <div class="card field"><label for="fav">Lieblingsverein</label><select id="fav">${options}</select></div>`;
+
+  if (fav) {
+    html += `<div class="card fav-card" style="background:linear-gradient(135deg, color-mix(in srgb, ${fav.c} 35%, transparent), var(--surface))">
+      <div class="fav-top">${logo(store.fav, fav.n, favIcon, 44)}<div><b style="font-size:16px">${esc(fav.f)}</b><div class="muted" style="font-size:13px">${s.favGames} Spiele live · ${s.favAway} auswärts</div></div></div>
+      <div class="wdl"><div><b style="color:var(--accent)">${s.w}</b><span>Siege</span></div><div><b>${s.d}</b><span>Unentschieden</span></div><div><b style="color:var(--live)">${s.l}</b><span>Niederlagen</span></div></div></div>`;
+  }
+  if (confirm.length) {
+    html += `<section class="section"><div class="section-head"><h2>Warst du dabei?</h2></div>${confirm.map((v) => `<div class="confirm">${visitRow(v)}
+      <div class="two"><button class="primary press" data-act="confirm-yes" data-id="${v.matchID}">Ja, war dabei</button><button class="secondary press" data-act="confirm-no" data-id="${v.matchID}">Nein</button></div></div>`).join('')}</section>`;
+  }
+  html += `<section class="section"><div class="section-head"><h2>Badges</h2><span>${won}/${bs.length}</span></div><div class="badges">${bs.map((b) => {
+    const done = b.p >= b.g;
+    const frac = Math.min(1, b.p / b.g);
+    const C = 2 * Math.PI * 26;
+    const arc = done || !frac ? '' : `<svg class="arc" viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="var(--accent)" stroke-opacity=".75" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(C * frac).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 28 28)"/></svg>`;
+    return `<div class="card badge${done ? ' won' : ''}"${done ? ' style="border-color:rgba(46,242,154,.5)"' : ''}><div class="medal">${arc}${ic(done ? b.i : 'lock', 24, 2)}</div><b>${esc(b.t)}</b><small>${done ? esc(b.d) : `${Math.min(b.p, b.g)}/${b.g} · ${esc(b.d)}`}</small></div>`;
+  }).join('')}</div></section>`;
+  if (planned.length) {
+    html += `<section class="section"><div class="section-head"><h2>Vorgemerkt</h2><span>${planned.length}</span></div>${planned.map((v) => visitRow(v)).join('')}</section>`;
+  }
+  html += `<section class="section"><div class="section-head"><h2>Besuchte Spiele</h2>${attended.length ? `<span>${attended.length}</span>` : ''}</div>${
+    attended.length ? attended.map((v) => visitRow(v)).join('')
+      : `<div class="card empty">${ic('ticket', 30)}<h3>Noch keine Spiele</h3><p>Öffne unter „Spiele“ eine Partie und tippe auf „Ich war dabei“.</p></div>`}</section>`;
+  return html;
+}
+
+/* ================= Detail-Ansichten (Sheet) ================= */
+function sheetMatch(m) {
+  const v = store.visits[m.matchID];
+  const st = matchState(m);
+  const sc = currentScore(m);
+  const ht = result(m, 1);
+  const k = kickoff(m);
+  const stad = stadiumOf(m);
+  const hc = clubColor(m.team1.teamId), ac = clubColor(m.team2.teamId);
+  const center = sc ? `<div class="score">${sc[0]}:${sc[1]}</div>` : `<div class="time">${k ? fmtTime.format(k) : '–:–'}</div>`;
+  const heroTeam = (t, role) => `<div class="team">${logo(t.teamId, teamName(t), t.teamIconUrl, 72)}<span class="team-name">${esc(fullName(t))}</span><span class="role">${role}</span></div>`;
+
+  let action;
+  if (st !== 'upcoming') {
+    action = v?.attended
+      ? banner('Du warst dabei', 'Steht in deinem Stadionheft', 'check', 'var(--accent)')
+      : `<button class="primary press" data-act="attend">${ic('check', 20)}Ich war dabei</button>`;
+  } else {
+    action = v
+      ? banner('Vorgemerkt', 'Nach dem Spiel kannst du es abhaken', 'bookmark', 'var(--gold)')
+      : `<button class="secondary press" data-act="plan">${ic('bookmarkLine', 20)}Spiel vormerken</button>`;
+  }
+
+  let prevHome = 0;
+  const goals = sortedGoals(m).map((g) => {
+    const home = (g.scoreTeam1 ?? prevHome) > prevHome;
+    prevHome = g.scoreTeam1 ?? prevHome;
+    const tag = g.isOwnGoal ? '<small style="color:var(--live)">Eigentor</small>' : g.isPenalty ? '<small style="color:var(--gold)">Elfmeter</small>' : '';
+    return `<div class="goal${home ? '' : ' away'}"><span class="minute">${g.matchMinute ?? '–'}'</span><div class="who">${esc(g.goalGetterName || 'Unbekannt')}${tag}</div><span class="sc">${g.scoreTeam1 ?? 0}:${g.scoreTeam2 ?? 0}</span></div>`;
+  }).join('');
+
+  const season = m.leagueSeason ?? SEASON;
+  const info = [
+    ['Wettbewerb', (COMPS[m._manual || compOf(m)] || COMPS.other).name],
+    ['Saison', `${season}/${String((season + 1) % 100).padStart(2, '0')}`],
+    ['Stadion', stad.name],
+    ...(m.numberOfViewers > 0 ? [['Zuschauer', nf.format(m.numberOfViewers)]] : []),
+  ].map(([a, b]) => `<div><dt>${a}</dt><dd>${esc(b)}</dd></div>`).join('');
+
+  return `<div class="grab"></div><button class="close press" data-act="close" aria-label="Schließen">${ic('close', 18, 2.4)}</button>
+    <div class="muted" style="text-align:center;font-weight:800;font-size:13px;margin-top:-6px;display:flex;gap:8px;justify-content:center;align-items:center">${compChip(m._manual || compOf(m))}${compOf(m) === 'bl1' && !m._manual && m.group?.groupOrderID ? `${m.group.groupOrderID}. Spieltag` : esc(m.group?.groupName || '')}</div>
+    <div class="hero" style="background:linear-gradient(135deg, color-mix(in srgb, ${hc} 45%, transparent), rgba(0,0,0,.25), color-mix(in srgb, ${ac} 45%, transparent))">
+      <div class="hero-row">${heroTeam(m.team1, 'Heim')}<div class="mid" style="padding-top:12px">${center}${statusHTML(m)}${ht && st !== 'upcoming' ? `<span class="status">Halbzeit ${ht[0]}:${ht[1]}</span>` : ''}</div>${heroTeam(m.team2, 'Gast')}</div>
+      <div class="meta">${k ? `<span>${ic('cal', 15)}${esc(fmtFull.format(k))} Uhr</span>` : ''}<span>${ic('pin', 15)}${esc(stad.city ? `${stad.name}, ${stad.city}` : stad.name)}</span></div>
+    </div>
+    ${action}
+    ${v?.attended ? `<section class="section"><div class="section-head"><h2>Deine Notiz</h2></div><textarea id="note" data-id="${m.matchID}" placeholder="Wie war's? Mit wem warst du da? Block, Wetter, Stimmung …">${esc(v.note || '')}</textarea></section>` : ''}
+    ${goals ? `<section class="section"><div class="section-head"><h2>Tore</h2></div><div class="card goals">${goals}</div></section>` : ''}
+    <section class="section"><div class="section-head"><h2>Infos</h2></div><dl class="card info" style="margin:0">${info}</dl></section>`;
+}
+function banner(title, sub, icon, color) {
+  return `<div class="card banner hl"><span style="color:${color}">${ic(icon, 28)}</span><div class="grow"><b>${title}</b><small>${sub}</small></div>
+    <button class="icon-btn press" data-act="remove" aria-label="Aus dem Heft entfernen">${ic('trash', 18)}</button></div>`;
+}
+
+function sheetStadium(id) {
+  const c = CLUBS[id];
+  const visits = allVisits().filter((v) => v.attended && v.homeId === id);
+  const apple = `https://maps.apple.com/?daddr=${c.lat},${c.lon}`;
+  const google = `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lon}`;
+  return `<div class="grab"></div><button class="close press" data-act="close" aria-label="Schließen">${ic('close', 18, 2.4)}</button>
+    <div class="fav-top" style="padding-right:40px">${logo(id, c.n, ICONS[id], 58)}<div><h2 style="font-family:var(--font-display);font-size:28px;font-weight:800;line-height:1.05">${esc(c.s)}</h2><div class="muted">${esc(c.f)} · ${esc(c.city)}</div></div></div>
+    <div class="stats"><div class="card stat">${ic('ticket')}<b>${visits.length}</b><span>Besuche</span></div><div class="card stat">${ic(visits.length ? 'check' : 'pin')}<b style="font-size:30px">${visits.length ? 'Abgehakt' : 'Offen'}</b><span>Status</span></div></div>
+    <div class="routes"><a class="primary press" href="${apple}" target="_blank" rel="noopener">${ic('route', 18)}Apple Karten</a><a class="secondary press" href="${google}" target="_blank" rel="noopener">${ic('route', 18)}Google Maps</a></div>
+    ${visits.length ? `<section class="section"><div class="section-head"><h2>Deine Spiele hier</h2></div>${visits.map((v) => visitRow(v)).join('')}</section>` : ''}`;
+}
+
+function renderSheet() {
+  const el = $('#sheet');
+  if (!S.sheet) { el.hidden = true; el.innerHTML = ''; document.body.classList.remove('locked'); return; }
+  const tint = S.sheet.type === 'match' ? clubColor(S.sheet.match.team1.teamId) : S.sheet.type === 'manual' ? '#2EF29A' : CLUBS[S.sheet.id]?.c;
+  const body = S.sheet.type === 'match' ? sheetMatch(S.sheet.match) : S.sheet.type === 'manual' ? sheetManual() : sheetStadium(S.sheet.id);
+  const panel = el.querySelector('.panel');
+  if (panel) { const top = panel.scrollTop; panel.innerHTML = body; panel.style.setProperty('--tint', tint); panel.scrollTop = top; }
+  else el.innerHTML = `<div class="backdrop" data-act="close"></div><div class="panel" role="dialog" aria-modal="true" style="--tint:${tint}">${body}</div>`;
+  el.hidden = false;
+  document.body.classList.add('locked');
+}
+
+async function openMatch(id) {
+  if (id < 0) { const v = store.visits[id]; if (v) { S.sheet = { type: 'match', match: matchFromVisit(v) }; renderSheet(); } return; }
+  const m = Object.values(S.cache).flat().find((x) => x.matchID === id)
+    || Object.values(S.clubCache).flatMap((x) => x.list).find((x) => x.matchID === id) || SNAP.byId[id];
+  if (m) { S.sheet = { type: 'match', match: m }; renderSheet(); }
+  try {
+    const fresh = await data.match(id);
+    if (fresh) {
+      if (m?._comp) fresh._comp = m._comp;
+      S.sheet = { type: 'match', match: fresh };
+      const v = store.visits[id];
+      if (v) { const had = hasScore(v); updateVisit(v, fresh); if (!had && hasScore(v)) persistVisit(v); else save(); }
+      renderSheet();
+    }
+  } catch (e) {
+    if (!m) {
+      const v = store.visits[id];
+      if (v) { S.sheet = { type: 'match', match: matchFromVisit(v) }; renderSheet(); }
+    }
+  }
+}
+function matchFromVisit(v) {
+  const results = hasScore(v) ? [{ resultTypeID: 2, pointsTeam1: v.hg, pointsTeam2: v.ag }] : [];
+  return { matchID: v.matchID, matchDateTimeUTC: v.kickoff, leagueSeason: v.season, group: { groupOrderID: v.matchday },
+    _comp: v.comp && COMPS[v.comp] && ['bl1', 'dfb', 'ucl', 'uel', 'uecl'].includes(v.comp) ? v.comp : undefined,
+    _manual: v.matchID < 0 ? (v.comp || 'other') : undefined,
+    location: { locationStadium: v.stadium, locationCity: v.city },
+    team1: { teamId: v.homeId, teamName: v.homeName, shortName: v.homeName, teamIconUrl: v.homeIcon },
+    team2: { teamId: v.awayId, teamName: v.awayName, shortName: v.awayName, teamIconUrl: v.awayIcon },
+    matchIsFinished: hasScore(v), matchResults: results, goals: [] };
+}
+function closeSheet() { S.sheet = null; renderSheet(); }
+
+/* ================= Wettbewerbe & Verein ================= */
+const COMPS = {
+  bl1: { name: '1. Bundesliga', short: 'BL', color: '#2EF29A' },
+  dfb: { name: 'DFB-Pokal', short: 'Pokal', color: '#FFC94D' },
+  ucl: { name: 'Champions League', short: 'CL', color: '#5B8CFF' },
+  uel: { name: 'Europa League', short: 'EL', color: '#FF9F43' },
+  uecl: { name: 'Conference League', short: 'ECL', color: '#2CC5D2' },
+  test: { name: 'Testspiel', short: 'Test', color: '#9AA4B2' },
+  other: { name: 'Anderer Wettbewerb', short: 'Andere', color: '#9AA4B2' },
+};
+/* Wo OpenLigaDB die Wettbewerbe je Saison führt (Community-Daten, teils doppelt angelegt) */
+const SOURCES = {
+  2026: { dfb: [['dfb', 2026]], ucl: [['ucl', 2026]], uel: [['uel2026', 2026]], uecl: [['uecl2026', 2026]] },
+  2025: { dfb: [['dfb', 2025]], ucl: [['ucl', 2025], ['ucl2025', 2025]], uel: [['uel', 2025]] },
+  2024: { dfb: [['dfb2024', 2024], ['dfb', 2024]], ucl: [['ucl2024', 2024], ['ucl24', 2024], ['cl24de', 2024]], uel: [['uel', 2024], ['uel24', 2024]] },
+  2023: { dfb: [['dfb', 2023], ['dfb2023', 2023]], ucl: [['champion1', 2023], ['cl1', 2023]], uel: [['uel2023', 2023]], uecl: [['uefaconf2023', 2023]] },
+  2022: { dfb: [['dfb2022', 2022]], ucl: [['uefacl22', 2022]], uel: [['uel2022', 2022]], uecl: [['uecl', 2022]] },
+  2021: { dfb: [['dfb2021', 2021]], ucl: [['uefacl', 2021]], uel: [['el21', 2021]] },
+  2020: { dfb: [['dfb2020', 2020]], ucl: [['uefacl2020', 2020], ['cl2020ger', 2020], ['uefacl', 2020]] },
+  2019: { dfb: [['dfb2019', 2019]], ucl: [['cl1920german', 2019], ['ucl2020', 2020]], uel: [['euroleague19', 2020]] },
+};
+const HISTORY_SEASONS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019].filter((s) => s <= SEASON);
+/* Suchbegriff je Verein für die Team-Filter der API */
+const CLUB_Q = { 40: 'Bayern', 7: 'Dortmund', 6: 'Leverkusen', 1635: 'Leipzig', 91: 'Frankfurt', 16: 'Stuttgart', 112: 'Freiburg', 87: 'Borussia M',
+  134: 'Bremen', 81: 'Mainz', 95: 'Augsburg', 175: 'Hoffenheim', 80: 'Union Berlin', 65: 'Köln', 100: 'Hamburger', 9: 'Schalke',
+  31: 'Paderborn', 198: 'Elversberg', 131: 'Wolfsburg', 98: 'Pauli', 199: 'Heidenheim' };
+const seasonLabel = (s) => `${s}/${String((s + 1) % 100).padStart(2, '0')}`;
+
+function compOf(m) {
+  if (m._comp) return m._comp;
+  const sc = String(m.leagueShortcut || ''), n = String(m.leagueName || '');
+  if (/pokal/i.test(n) || /^dfb/i.test(sc)) return 'dfb';
+  if (/champions/i.test(n)) return 'ucl';
+  if (/europa ?league|euroleague/i.test(n) || /^(uel|el)\d*$/i.test(sc)) return 'uel';
+  if (/conference/i.test(n) || /uecl|conf/i.test(sc)) return 'uecl';
+  return 'bl1';
+}
+const compChip = (c) => { const x = COMPS[c] || COMPS.other; return `<span class="comp" style="--cc:${x.color}">${x.short}</span>`; };
+
+const dayKeyOf = (m) => { const k = kickoff(m); return k ? fmtDayKey.format(k) : 'x'; };
+function dedupe(list) {
+  const best = new Map();
+  for (const m of list) {
+    const key = `${dayKeyOf(m)}|${m.team1.teamId}|${m.team2.teamId}`;
+    const cur = best.get(key);
+    const score = (x) => (result(x, 2) ? 10 : 0) + (x.goals?.length || 0);
+    if (!cur || score(m) > score(cur)) best.set(key, m);
+  }
+  return [...best.values()].sort((a, b) => (kickoff(a) || 0) - (kickoff(b) || 0));
+}
+
+async function fetchComp(comp, sources, teamId) {
+  const out = [];
+  const q = encodeURIComponent(CLUB_Q[teamId] || CLUBS[teamId]?.n || '');
+  for (const [sc, season] of sources) {
+    let list = [];
+    try { list = await api(`getmatchdata/${sc}/${season}/${q}`); } catch (e) { list = []; }
+    if (!Array.isArray(list)) list = [];
+    list = list.filter((m) => m?.team1 && m?.team2 && (m.team1.teamId === teamId || m.team2.teamId === teamId));
+    if (comp === 'bl1' && !list.length) {
+      try { list = (await api(`getmatchdata/bl1/${season}`)).filter((m) => m.team1.teamId === teamId || m.team2.teamId === teamId); } catch (e) { list = []; }
+    }
+    // Platzhalter-Ligen (alle Spiele mit gleichem Termin) überspringen
+    if (list.length >= 3 && new Set(list.map((m) => m.matchDateTimeUTC)).size === 1) continue;
+    list.forEach((m) => { m._comp = comp; });
+    out.push(...list);
+  }
+  return out;
+}
+
+function clubMatches(teamId, season) {
+  const key = `${teamId}:${season}`;
+  const hit = S.clubCache[key];
+  const fresh = hit && (season !== SEASON || Date.now() - hit.at < 5 * 60e3);
+  if (fresh || S.clubLoading[key]) return hit?.list || null;
+  S.clubLoading[key] = (async () => {
+    let list;
+    if (S.demo) {
+      list = season === SNAP.season ? Object.values(SNAP.byId).filter((m) => m.team1.teamId === teamId || m.team2.teamId === teamId) : [];
+    } else {
+      const jobs = [fetchComp('bl1', [['bl1', season]], teamId)];
+      for (const [comp, src] of Object.entries(SOURCES[season] || {})) jobs.push(fetchComp(comp, src, teamId));
+      const res = await Promise.allSettled(jobs);
+      list = res.flatMap((r) => (r.status === 'fulfilled' ? r.value : []));
+    }
+    S.clubCache[key] = { list: dedupe(list), at: Date.now() };
+    delete S.clubLoading[key];
+    if (S.view === 'verein') render();
+  })().catch(() => { delete S.clubLoading[key]; S.clubCache[key] = { list: [], at: Date.now(), failed: true }; if (S.view === 'verein') render(); });
+  return hit?.list || null;
+}
+
+function relDay(k) {
+  const today = fmtDayKey.format(new Date());
+  const tomorrow = fmtDayKey.format(new Date(Date.now() + 864e5));
+  const key = fmtDayKey.format(k);
+  if (key === today) return `Heute, ${fmtTime.format(k)} Uhr`;
+  if (key === tomorrow) return `Morgen, ${fmtTime.format(k)} Uhr`;
+  const days = Math.round((new Date(key) - new Date(today)) / 864e5);
+  return days > 0 && days < 7 ? `In ${days} Tagen · ${fmtWd.format(k)}, ${fmtTime.format(k)} Uhr` : `${fmtDay.format(k)}, ${fmtTime.format(k)} Uhr`;
+}
+
+function outcome(m, clubId) {
+  const sc = result(m, 2);
+  if (!sc) return null;
+  const home = m.team1.teamId === clubId;
+  const own = home ? sc[0] : sc[1], other = home ? sc[1] : sc[0];
+  return own > other ? 'S' : own === other ? 'U' : 'N';
+}
+
+/* Zeile für Vereinsspiele: links öffnen, rechts abhaken */
+function clubRow(m, clubId, withToggle) {
+  const home = m.team1.teamId === clubId;
+  const opp = home ? m.team2 : m.team1;
+  const k = kickoff(m);
+  const st = matchState(m);
+  const sc = currentScore(m);
+  const v = store.visits[m.matchID];
+  const res = outcome(m, clubId);
+  const right = sc
+    ? `<div class="cm-score">${sc[0]}:${sc[1]}${res ? `<i class="res res-${res}">${res}</i>` : ''}</div>`
+    : `<div class="cm-score time-s">${k ? fmtTime.format(k) : '–'}</div>`;
+  const toggle = withToggle
+    ? `<button class="tick press${v?.attended ? ' on' : v ? ' plan' : ''}" data-act="tick" data-id="${m.matchID}" aria-label="${v?.attended ? 'Besuch entfernen' : st === 'upcoming' ? 'Vormerken' : 'Ich war dabei'}" aria-pressed="${v ? 'true' : 'false'}">${ic(v?.attended ? 'check' : v ? 'bookmark' : st === 'upcoming' ? 'bookmarkLine' : 'plus', 20, 2.2)}</button>`
+    : (v ? `<span class="mark-s ${v.attended ? 'att' : 'plan'}">${ic(v.attended ? 'check' : 'bookmark', 16)}</span>` : '');
+  return `<div class="cm card${v?.attended ? ' hl' : ''}">
+    <button class="cm-main press" data-act="open" data-id="${m.matchID}">
+      <div class="date"><b>${k ? fmtD.format(k) : '–'}</b><span>${k ? fmtMon.format(k).replace('.', '') : ''}</span><small>${k ? fmtWd.format(k) : ''}</small></div>
+      <div class="vsep"></div>
+      <div class="cm-mid"><div class="cm-meta">${compChip(compOf(m))}<span>${home ? 'Heim' : 'Auswärts'}</span>${st === 'live' ? '<span class="live">LIVE</span>' : ''}</div>
+        <div class="cm-opp">${logo(opp.teamId, teamName(opp), opp.teamIconUrl, 26)}<span>${esc(teamName(opp))}</span></div></div>
+      ${right}
+    </button>${toggle}</div>`;
+}
+
+function clubPicker(current) {
+  const ids = [...CURRENT_IDS, ...Object.keys(CLUBS).map(Number).filter((id) => !CURRENT_IDS.includes(id))];
+  return `<div class="clubs">${ids.map((id) => `<button class="club-btn press${id === current ? ' on' : ''}" data-act="pick-club" data-id="${id}">
+    ${logo(id, CLUBS[id].n, ICONS[id], 44)}<span>${esc(CLUBS[id].n)}</span></button>`).join('')}</div>`;
+}
+
+function viewVerein() {
+  const id = S.clubView || store.fav;
+  const c = CLUBS[id];
+  if (!c) {
+    return `<header class="top"><h1>Mein Verein</h1></header>
+      <div class="card auth"><h2>Wer ist dein Verein?</h2><p>Dann zeige ich dir hier zuerst seine Spiele: Bundesliga, DFB-Pokal und Europapokal.</p>${clubPicker(0)}</div>`;
+  }
+  const isFav = id === store.fav;
+  const list = clubMatches(id, SEASON);
+  const table = S.tables[SEASON];
+  if (!table && S.ready && !S.tableLoading[SEASON]) loadTable(SEASON);
+  const pos = table ? table.findIndex((e) => e.teamInfoId === id) : -1;
+  const attendedClub = allVisits().filter((v) => v.attended && (v.homeId === id || v.awayId === id)).length;
+
+  let html = `<header class="top"><h1>${isFav ? 'Mein Verein' : 'Verein'}</h1><span class="pill">${SEASON_LABEL}</span></header>${demoHTML()}
+    <div class="card club-hero" style="background:linear-gradient(140deg, color-mix(in srgb, ${c.c} 42%, transparent), rgba(255,255,255,.04) 70%)">
+      <div class="fav-top">${logo(id, c.n, ICONS[id], 64)}<div><h2>${esc(c.f)}</h2><div class="muted">${esc(c.s)} · ${esc(c.city)}</div></div></div>
+      <div class="hero-facts">
+        ${pos >= 0 ? `<div><b>${pos + 1}.</b><span>Platz</span></div><div><b>${table[pos].points}</b><span>Punkte</span></div>` : ''}
+        <div><b>${attendedClub}</b><span>Spiele live</span></div>
+      </div>
+      <div class="two"><button class="secondary press" data-act="club-change">Wechseln</button>${isFav
+        ? `<button class="secondary press" data-act="manual">${ic('plus', 17, 2.4)}Eintragen</button>`
+        : `<button class="primary press" data-act="club-fav" data-id="${id}">Als meinen Verein</button>`}</div>
+    </div>`;
+  if (S.clubPicking) html += `<section class="section"><div class="section-head"><h2>Verein wählen</h2></div>${clubPicker(id)}</section>`;
+
+  if (!list) return html + loadingHTML;
+  const upcoming = list.filter((m) => matchState(m) !== 'finished');
+  const recent = list.filter((m) => matchState(m) === 'finished').reverse();
+  const next = upcoming[0];
+  if (next) {
+    const k = kickoff(next);
+    const v = store.visits[next.matchID];
+    html += `<section class="section"><div class="section-head"><h2>Nächstes Spiel</h2>${compChip(compOf(next))}</div>
+      <button class="card next press" data-act="open" data-id="${next.matchID}">
+        <div class="next-when">${matchState(next) === 'live' ? '<span class="live">LIVE</span>' : esc(k ? relDay(k) : 'Termin offen')}</div>
+        <div class="hero-row">
+          <div class="team">${logo(next.team1.teamId, teamName(next.team1), next.team1.teamIconUrl, 58)}<span class="team-name">${esc(teamName(next.team1))}</span></div>
+          <div class="mid">${currentScore(next) ? `<div class="score">${currentScore(next)[0]}:${currentScore(next)[1]}</div>` : '<div class="time">vs</div>'}</div>
+          <div class="team">${logo(next.team2.teamId, teamName(next.team2), next.team2.teamIconUrl, 58)}<span class="team-name">${esc(teamName(next.team2))}</span></div>
+        </div>
+        <div class="meta"><span>${ic('pin', 15)}${esc(stadiumOf(next).name)}</span>${v ? `<span style="color:${v.attended ? 'var(--accent)' : 'var(--gold)'}">${ic(v.attended ? 'check' : 'bookmark', 15)}${v.attended ? 'Du bist dabei' : 'Vorgemerkt'}</span>` : ''}</div>
+      </button></section>`;
+  }
+  if (upcoming.length > 1) {
+    html += `<section class="section"><div class="section-head"><h2>Kommende Spiele</h2><span>${upcoming.length - 1}</span></div>${upcoming.slice(1, 9).map((m) => clubRow(m, id, false)).join('')}</section>`;
+  }
+  if (recent.length) {
+    const form = recent.slice(0, 5).map((m) => outcome(m, id)).filter(Boolean);
+    html += `<section class="section"><div class="section-head"><h2>Letzte Ergebnisse</h2><span class="form">${form.map((r) => `<i class="res res-${r}">${r}</i>`).join('')}</span></div>${recent.slice(0, 5).map((m) => clubRow(m, id, false)).join('')}</section>`;
+  }
+  if (!list.length) html += `<div class="card empty"><h3>Keine Spiele gefunden</h3><p>Für diese Saison sind noch keine Spiele eingetragen.</p></div>`;
+
+  // Historie
+  const hs = S.histSeason;
+  const hist = clubMatches(id, hs);
+  html += `<section class="section"><div class="section-head"><h2>Historie nachtragen</h2></div>
+    <div class="hint" style="padding:0 6px">Tippe auf <b>+</b>, wenn du bei einem Spiel warst. Bei kommenden Spielen merkst du es damit vor.</div>
+    <div class="lchips">${HISTORY_SEASONS.map((s) => `<button class="lchip press${s === hs ? ' on' : ''}" data-act="hist-season" data-season="${s}">${seasonLabel(s)}</button>`).join('')}</div>`;
+  if (!hist) html += loadingHTML;
+  else {
+    const past = hist.filter((m) => matchState(m) !== 'upcoming' || hs !== SEASON).slice().reverse();
+    const seen = hist.filter((m) => store.visits[m.matchID]?.attended).length;
+    const comps = [...new Set(hist.map(compOf))];
+    html += `<div class="card cloud"><span style="color:var(--accent)">${ic('ticket', 24)}</span><div class="grow"><b>${seen} von ${hist.filter((m) => matchState(m) === 'finished').length} Spielen besucht</b>
+      <span class="muted">${esc(seasonLabel(hs))} · ${comps.map((x) => COMPS[x].name).join(', ') || 'keine Daten'}</span></div></div>`;
+    html += (hs === SEASON ? hist.slice().reverse() : past).map((m) => clubRow(m, id, true)).join('') || '<div class="card empty"><p>Keine Spiele in dieser Saison.</p></div>';
+  }
+  html += `<button class="secondary press" data-act="manual">${ic('plus', 18, 2.2)}Spiel fehlt? Manuell eintragen</button></section>`;
+  return html;
+}
+
+/* Manuell eintragen (Testspiele, Auswärtsfahrten, fehlende Daten) */
+function matchClubByName(name) {
+  const n = name.trim().toLowerCase();
+  if (!n) return 0;
+  const hit = Object.entries(CLUBS).find(([, c]) => c.n.toLowerCase() === n || c.f.toLowerCase() === n || c.f.toLowerCase().includes(n) || c.k.toLowerCase() === n);
+  return hit ? Number(hit[0]) : 0;
+}
+function sheetManual() {
+  const fav = CLUBS[store.fav];
+  const today = fmtDayKey.format(new Date());
+  return `<div class="grab"></div><button class="close press" data-act="close" aria-label="Schließen">${ic('close', 18, 2.4)}</button>
+    <h2 style="font-family:var(--font-display);font-size:30px;font-weight:800">Spiel eintragen</h2>
+    <p class="muted" style="margin:0">Für Spiele, die in den Daten fehlen, zum Beispiel Testspiele oder Auswärtsfahrten.</p>
+    <form class="form" id="manual-form" novalidate>
+      <label for="mdate">Datum</label><input class="input" id="mdate" type="date" max="${today}" value="${today}" required>
+      <label for="mcomp">Wettbewerb</label><select class="input" id="mcomp">${Object.entries(COMPS).map(([k, x]) => `<option value="${k}"${k === 'test' ? ' selected' : ''}>${x.name}</option>`).join('')}</select>
+      <label for="mhome">Heim</label><input class="input" id="mhome" list="clublist" placeholder="z. B. ${esc(fav?.n || 'Dortmund')}" maxlength="40" required>
+      <label for="maway">Gast</label><input class="input" id="maway" list="clublist" placeholder="z. B. FC Arsenal" maxlength="40" required>
+      <datalist id="clublist">${Object.values(CLUBS).map((c) => `<option value="${esc(c.n)}"></option>`).join('')}</datalist>
+      <label>Ergebnis</label><div class="inline"><input class="input" id="mhg" type="number" min="0" max="30" inputmode="numeric" placeholder="Heim"><input class="input" id="mag" type="number" min="0" max="30" inputmode="numeric" placeholder="Gast"></div>
+      <label for="mstadium">Stadion</label><input class="input" id="mstadium" maxlength="60" placeholder="leer = Stadion des Heimteams">
+      ${msgHTML(S.manualMsg)}
+      <button class="primary press" type="submit">${ic('check', 20)}Ich war dabei</button>
+    </form>`;
+}
+function saveManual() {
+  const date = $('#mdate').value, homeName = $('#mhome').value.trim(), awayName = $('#maway').value.trim();
+  if (!date || !homeName || !awayName) { S.manualMsg = { text: 'Bitte Datum, Heim- und Gastteam ausfüllen.' }; renderSheet(); return; }
+  const homeId = matchClubByName(homeName), awayId = matchClubByName(awayName);
+  const hgRaw = $('#mhg').value, agRaw = $('#mag').value;
+  const id = -Math.floor(Date.now() / 1000);
+  const d = new Date(`${date}T15:30:00`);
+  const season = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
+  const v = {
+    matchID: id, kickoff: d.toISOString(), season, matchday: 0, comp: $('#mcomp').value,
+    homeId, homeName: homeId ? CLUBS[homeId].n : homeName, homeIcon: null,
+    awayId, awayName: awayId ? CLUBS[awayId].n : awayName, awayIcon: null,
+    hg: hgRaw === '' ? null : Number(hgRaw), ag: agRaw === '' ? null : Number(agRaw),
+    stadium: $('#mstadium').value.trim() || (homeId ? CLUBS[homeId].s : `Stadion von ${homeName}`), city: homeId ? CLUBS[homeId].city : '',
+    attended: true, note: '', createdAt: new Date().toISOString(),
+  };
+  store.visits[id] = v;
+  persistVisit(v);
+  vibrate();
+  S.manualMsg = null;
+  S.sheet = { type: 'match', match: matchFromVisit(v) };
+  renderSheet();
+  render();
+}
+
+/* ================= Konten, Cloud-Sync & Ligen (Supabase) ================= */
+let sb = null;
+const cloudConfigured = () => !S.demo && !!SUPABASE_URL && !!SUPABASE_KEY;
+const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
+
+function loadScript(src, integrity) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.integrity = integrity; el.crossOrigin = 'anonymous';
+    el.onload = () => resolve(); el.onerror = () => reject(new Error(`${src} nicht geladen`));
+    document.head.appendChild(el);
+  });
+}
+
+async function initCloud() {
+  try {
+    if (!window.supabase) await loadScript(SUPABASE_JS.src, SUPABASE_JS.sri);
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, storageKey: 'stadionheft-auth' },
+    });
+    const { data } = await sb.auth.getSession();
+    sb.auth.onAuthStateChange((event) => { if (event === 'SIGNED_OUT' && S.user) setTimeout(afterLogout, 0); });
+    if (data.session) await afterLogin(data.session.user);
+  } catch (e) {
+    S.cloudError = 'Die Konto-Funktion ist gerade nicht erreichbar.';
+  }
+  S.cloudReady = true;
+  if (S.view === 'liga' || S.view === 'heft') render();
+}
+
+const toRow = (v) => ({
+  user_id: S.user.id, match_id: v.matchID, kickoff: v.kickoff, season: v.season ?? null, matchday: v.matchday ?? null,
+  home_id: v.homeId, home_name: v.homeName, home_icon: v.homeIcon ?? null,
+  away_id: v.awayId, away_name: v.awayName, away_icon: v.awayIcon ?? null,
+  hg: v.hg ?? null, ag: v.ag ?? null, stadium: v.stadium || '', city: v.city || '',
+  attended: !!v.attended, note: (v.note || '').slice(0, 2000), updated_at: v.updatedAt || new Date().toISOString(),
+  comp: v.comp || 'bl1',
+});
+const fromRow = (r) => ({
+  matchID: r.match_id, kickoff: r.kickoff, season: r.season, matchday: r.matchday,
+  homeId: r.home_id, homeName: r.home_name, homeIcon: r.home_icon,
+  awayId: r.away_id, awayName: r.away_name, awayIcon: r.away_icon,
+  hg: r.hg, ag: r.ag, stadium: r.stadium, city: r.city, attended: r.attended, note: r.note || '', comp: r.comp || 'bl1',
+  createdAt: r.updated_at, updatedAt: r.updated_at,
+});
+
+/* Lokales Heft und Konto zusammenführen: neuerer Stand gewinnt, nur lokal Vorhandenes wird hochgeladen */
+async function syncVisits() {
+  const { data, error } = await sb.from('visits').select('*');
+  if (error) throw error;
+  const upload = [];
+  const merged = {};
+  for (const r of data) merged[r.match_id] = fromRow(r);
+  for (const v of Object.values(store.visits)) {
+    const c = merged[v.matchID];
+    if (!c || new Date(v.updatedAt || 0) > new Date(c.updatedAt || 0)) { merged[v.matchID] = v; upload.push(v); }
+  }
+  store.visits = merged;
+  save();
+  if (upload.length) {
+    const { error: upErr } = await sb.from('visits').upsert(upload.map(toRow));
+    if (upErr) throw upErr;
+  }
+}
+
+function persistVisit(v) {
+  v.updatedAt = new Date().toISOString();
+  save();
+  if (!sb || !S.user) return;
+  sb.from('visits').upsert(toRow(v)).then(({ error }) => { if (error) S.syncError = true; });
+}
+function deleteVisit(id) {
+  delete store.visits[id];
+  save();
+  if (!sb || !S.user) return;
+  sb.from('visits').delete().eq('match_id', id).then(({ error }) => { if (error) S.syncError = true; });
+}
+let noteTimer = null;
+function persistNoteSoon(v) {
+  v.updatedAt = new Date().toISOString();
+  save();
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => persistVisit(v), 800);
+}
+function persistFav() {
+  save();
+  if (sb && S.user) sb.from('profiles').update({ fav: store.fav }).eq('id', S.user.id).then(() => {});
+}
+
+async function afterLogin(user) {
+  S.user = { id: user.id, username: user.user_metadata?.username || (user.email || '').split('@')[0] };
+  try { await syncVisits(); S.syncError = false; } catch (e) { S.syncError = true; }
+  try {
+    const { data } = await sb.from('profiles').select('fav').eq('id', user.id).single();
+    if (data?.fav) store.fav = data.fav;
+    else if (store.fav) persistFav();
+    save();
+  } catch (e) { /* egal */ }
+  await loadLeagues();
+  if (S.pendingJoin) {
+    const code = S.pendingJoin;
+    S.pendingJoin = null;
+    try { sessionStorage.removeItem('stadionheft.join'); } catch (e) { /* egal */ }
+    await joinLeague(code);
+  }
+}
+
+function afterLogout() {
+  S.user = null; S.leagues = null; S.league = null; S.board = {}; S.confirmLeave = null;
+  store.visits = {}; store.fav = 0; save();
+  S.authMsg = { ok: true, text: 'Abgemeldet. Dein Stadionheft ist in deinem Konto gesichert.' };
+  render();
+}
+
+async function authSubmit(mode, username, password) {
+  const u = username.trim().toLowerCase();
+  S.authMsg = null;
+  if (!USERNAME_RE.test(u)) { S.authMsg = { text: 'Benutzername: 3–20 Zeichen, nur Buchstaben, Zahlen und _.' }; render(); return; }
+  if (password.length < 6) { S.authMsg = { text: 'Das Passwort braucht mindestens 6 Zeichen.' }; render(); return; }
+  S.authBusy = true; render();
+  const email = `${u}@${AUTH_DOMAIN}`;
+  try {
+    let res;
+    if (mode === 'signup') {
+      res = await sb.auth.signUp({ email, password, options: { data: { username: u } } });
+      if (!res.error && !res.data.session) {
+        S.authMsg = { text: 'Konto angelegt, aber Supabase verlangt noch eine E-Mail-Bestätigung. Schalte in Supabase unter Authentication → Sign In / Providers → Email die Option „Confirm email“ aus.' };
+      }
+    } else {
+      res = await sb.auth.signInWithPassword({ email, password });
+    }
+    if (res.error) {
+      const m = (res.error.message || '').toLowerCase();
+      S.authMsg = { text: m.includes('already') ? 'Dieser Benutzername ist schon vergeben.'
+        : m.includes('invalid login') ? 'Benutzername oder Passwort ist falsch.'
+        : m.includes('password') ? 'Das Passwort ist zu schwach. Nimm mindestens 6 Zeichen.'
+        : 'Das hat nicht geklappt. Versuch es gleich nochmal.' };
+    } else if (res.data.session) {
+      await afterLogin(res.data.user);
+    }
+  } catch (e) {
+    S.authMsg = { text: 'Keine Verbindung zum Server. Prüfe dein Internet.' };
+  }
+  S.authBusy = false;
+  render();
+}
+
+async function loadLeagues() {
+  if (!sb || !S.user) return;
+  const { data, error } = await sb.from('league_members').select('league_id, leagues(id, name, invite_code, owner_id)').eq('user_id', S.user.id);
+  if (error) { S.ligaMsg = { text: 'Ligen konnten nicht geladen werden.' }; return; }
+  S.leagues = data.map((r) => r.leagues).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  if (!S.leagues.some((l) => l.id === S.league)) S.league = S.leagues[0]?.id ?? null;
+  if (S.league) await loadBoard(S.league);
+}
+
+async function loadBoard(id) {
+  const { data, error } = await sb.rpc('league_visits', { p_league: id });
+  if (error) { S.ligaMsg = { text: 'Die Liga-Tabelle konnte nicht geladen werden.' }; return; }
+  const members = new Map();
+  for (const r of data) {
+    if (!members.has(r.user_id)) members.set(r.user_id, { id: r.user_id, username: r.username, fav: r.fav || 0, visits: [] });
+    if (r.match_id != null) {
+      members.get(r.user_id).visits.push({ matchID: r.match_id, kickoff: r.kickoff, homeId: r.home_id, homeName: r.home_name, homeIcon: r.home_icon,
+        awayId: r.away_id, awayName: r.away_name, awayIcon: r.away_icon, hg: r.hg, ag: r.ag, stadium: r.stadium, city: r.city, attended: true });
+    }
+  }
+  const rows = [...members.values()].map((m) => {
+    const st = bookStats(m.visits, m.fav);
+    const won = badges(st).filter((b) => b.p >= b.g).length;
+    return { ...m, st, won, points: st.games * 3 + st.stadiums * 5 + won };
+  }).sort((a, b) => b.points - a.points || b.st.games - a.st.games || a.username.localeCompare(b.username, 'de'));
+  const feed = [...members.values()]
+    .flatMap((m) => m.visits.map((v) => ({ ...v, username: m.username })))
+    .sort((a, b) => new Date(b.kickoff) - new Date(a.kickoff)).slice(0, 12);
+  S.board[id] = { rows, feed, at: Date.now() };
+}
+
+async function createLeague(name) {
+  const n = name.trim();
+  if (n.length < 2) { S.ligaMsg = { text: 'Gib der Liga einen Namen mit mindestens 2 Zeichen.' }; render(); return; }
+  const { data, error } = await sb.rpc('create_league', { p_name: n.slice(0, 40) });
+  if (error) { S.ligaMsg = { text: 'Die Liga konnte nicht erstellt werden.' }; render(); return; }
+  S.league = data.id;
+  S.ligaMsg = { ok: true, text: `Liga „${data.name}“ erstellt. Lade jetzt deine Freunde ein.` };
+  await loadLeagues();
+  render();
+}
+
+async function joinLeague(code) {
+  const c = code.trim().toUpperCase();
+  if (!/^[A-Z0-9]{6,12}$/.test(c)) { S.ligaMsg = { text: 'Der Einladungscode hat 8 Zeichen, zum Beispiel A1B2C3D4.' }; render(); return; }
+  const { data, error } = await sb.rpc('join_league', { p_code: c });
+  if (error) { S.ligaMsg = { text: 'Diesen Einladungscode gibt es nicht.' }; render(); return; }
+  S.league = data.id;
+  S.ligaMsg = { ok: true, text: `Du bist jetzt in der Liga „${data.name}“.` };
+  await loadLeagues();
+  render();
+}
+
+async function leaveLeague(id) {
+  const { error } = await sb.from('league_members').delete().eq('league_id', id).eq('user_id', S.user.id);
+  S.confirmLeave = null;
+  if (error) { S.ligaMsg = { text: 'Verlassen hat nicht geklappt.' }; render(); return; }
+  delete S.board[id];
+  S.league = null;
+  S.ligaMsg = { ok: true, text: 'Liga verlassen.' };
+  await loadLeagues();
+  render();
+}
+
+async function shareInvite(l) {
+  const url = `${location.origin}${location.pathname}?join=${l.invite_code}`;
+  const text = `Komm in meine Stadionheft-Liga „${l.name}“! Code: ${l.invite_code}`;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Stadionheft-Liga', text, url }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  try {
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    S.ligaMsg = { ok: true, text: 'Einladungslink kopiert. Schick ihn deinen Freunden, z. B. per WhatsApp.' };
+  } catch (e) {
+    S.ligaMsg = { ok: true, text: `Schick deinen Freunden diesen Link: ${url}` };
+  }
+  render();
+}
+
+function msgHTML(m) { return m ? `<div class="msg ${m.ok ? 'ok' : 'err'}" role="status">${esc(m.text)}</div>` : ''; }
+
+function viewLiga() {
+  const head = `<header class="top"><h1>Liga</h1>${S.user ? `<span class="pill">@${esc(S.user.username)}</span>` : ''}</header>`;
+  if (S.demo) {
+    return head + `<div class="card empty">${ic('people', 30)}<h3>Freundes-Ligen</h3><p>In der Vorschau nicht verfügbar. In der gehosteten Version erstellst du hier ein Konto und vergleichst dich mit deinen Freunden.</p></div>`;
+  }
+  if (!cloudConfigured()) {
+    return head + `<div class="card empty">${ic('people', 30)}<h3>Noch nicht eingerichtet</h3><p>Für Konten und Ligen fehlen noch die Supabase-Zugangsdaten in der index.html.</p></div>`;
+  }
+  if (!S.cloudReady) return head + loadingHTML;
+  if (S.cloudError) return head + errorHTML(S.cloudError);
+
+  if (!S.user) {
+    return head + `<div class="card auth">
+      <h2>Zusammen Stadien sammeln</h2>
+      <p>Mit Konto wird dein Stadionheft gesichert, und du trittst mit Freunden in einer eigenen Liga gegeneinander an.</p>
+      ${S.pendingJoin ? `<div class="msg ok">Du wurdest in eine Liga eingeladen. Melde dich an, dann trittst du automatisch bei.</div>` : ''}
+      <form class="form" id="auth-form" novalidate>
+        <label for="au">Benutzername</label>
+        <input class="input" id="au" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="z. B. abdull" maxlength="20" required>
+        <label for="ap">Passwort</label>
+        <input class="input" id="ap" name="password" type="password" autocomplete="current-password" placeholder="mindestens 6 Zeichen" required>
+        ${msgHTML(S.authMsg)}
+        <div class="two">
+          <button class="primary press" type="submit" data-mode="login"${S.authBusy ? ' disabled' : ''}>Anmelden</button>
+          <button class="secondary press" type="submit" data-mode="signup"${S.authBusy ? ' disabled' : ''}>Konto erstellen</button>
+        </div>
+      </form>
+      <div class="hint">Du brauchst keine E-Mail. Merk dir dein Passwort gut, denn ohne E-Mail kann man es nicht zurücksetzen.</div>
+    </div>`;
+  }
+
+  const leagues = S.leagues || [];
+  const forms = `<section class="section"><div class="section-head"><h2>${leagues.length ? 'Weitere Liga' : 'Deine erste Liga'}</h2></div>
+    <div class="card auth">
+      <form class="form" id="create-form"><label for="lname">Neue Liga erstellen</label>
+        <div class="inline"><input class="input" id="lname" maxlength="40" placeholder="z. B. Kurve Monheim"><button class="primary press" type="submit">Erstellen</button></div></form>
+      <form class="form" id="join-form"><label for="lcode">Mit Einladungscode beitreten</label>
+        <div class="inline"><input class="input" id="lcode" maxlength="12" autocapitalize="characters" spellcheck="false" placeholder="A1B2C3D4"><button class="secondary press" type="submit">Beitreten</button></div></form>
+    </div></section>`;
+  const logout = `<button class="link-btn" data-act="logout">Abmelden</button>`;
+
+  if (!leagues.length) return head + msgHTML(S.ligaMsg) + forms + logout;
+
+  const l = leagues.find((x) => x.id === S.league) || leagues[0];
+  const board = S.board[l.id];
+  if (board && Date.now() - board.at > 60000) loadBoard(l.id).then(() => { if (S.view === 'liga') render(); });
+  const chips = leagues.length > 1
+    ? `<div class="lchips">${leagues.map((x) => `<button class="lchip press${x.id === l.id ? ' on' : ''}" data-act="league" data-lid="${x.id}">${esc(x.name)}</button>`).join('')}</div>` : '';
+
+  let table = loadingHTML, feed = '';
+  if (board) {
+    table = `<div class="card table"><div class="lrow head"><div class="rk">#</div><div>Spieler</div><div class="num">Sp</div><div class="num">Std</div><div class="num">Tore</div><div style="text-align:right">Pkt</div></div>
+      ${board.rows.map((r, i) => `<div class="lrow${r.id === S.user.id ? ' me' : ''}">
+        <div class="rk">${i + 1}</div>
+        <div class="who">${r.fav && CLUBS[r.fav] ? logo(r.fav, CLUBS[r.fav].n, ICONS[r.fav], 24) : `<span class="avatar" style="width:24px;height:24px;font-size:11px">${esc(r.username[0].toUpperCase())}</span>`}<span>${esc(r.username)}</span></div>
+        <div class="num">${r.st.games}</div><div class="num">${r.st.stadiums}</div><div class="num">${r.st.goals}</div><div class="pts">${r.points}</div></div>`).join('')}
+    </div><div class="hint" style="padding:0 6px">Punkte: 3 pro Spiel, 5 pro Stadion, 1 pro Badge · Sp = Spiele, Std = Stadien</div>`;
+    feed = board.feed.length
+      ? `<section class="section"><div class="section-head"><h2>Zuletzt im Stadion</h2></div><div class="card feed">${board.feed.map((v) => {
+          const k = new Date(v.kickoff);
+          const sc = hasScore(v) ? `${v.hg}:${v.ag}` : '–:–';
+          return `<div class="feed-item"><span class="avatar">${esc(v.username[0].toUpperCase())}</span><div class="grow">
+            <div class="t">${esc(v.username)} · ${esc(v.homeName)} ${sc} ${esc(v.awayName)}</div>
+            <div class="s">${esc(v.stadium)} · ${esc(fmtDay.format(k))}</div></div></div>`;
+        }).join('')}</div></section>`
+      : `<div class="card empty"><h3>Noch keine Spiele</h3><p>Sobald jemand bei einem Spiel „Ich war dabei“ drückt, taucht es hier auf.</p></div>`;
+  }
+
+  const leave = S.confirmLeave === l.id
+    ? `<div class="two"><button class="secondary press" data-act="leave-yes" data-lid="${l.id}" style="color:var(--live)">Ja, verlassen</button><button class="secondary press" data-act="leave-no">Abbrechen</button></div>`
+    : `<button class="link-btn" data-act="leave" data-lid="${l.id}">Liga verlassen</button>`;
+
+  return head + msgHTML(S.ligaMsg) + chips + `<div class="card lg-head">
+      <h2>${esc(l.name)}</h2>
+      <div class="inline" style="align-items:center"><span class="code" aria-label="Einladungscode">${esc(l.invite_code)}</span>
+        <button class="primary press" data-act="invite" data-lid="${l.id}">${ic('people', 18)}Freunde einladen</button></div>
+    </div>` + table + feed + leave + forms + logout;
+}
+
+function cloudCardHTML() {
+  if (S.demo || !cloudConfigured()) return '';
+  if (S.user) {
+    return `<div class="card cloud"><span style="color:var(--accent)">${ic('check', 26)}</span><div class="grow"><b>Gesichert in deinem Konto</b>
+      <span class="muted">Angemeldet als @${esc(S.user.username)}${S.syncError ? ' · Synchronisierung hängt, wird beim nächsten Start nachgeholt' : ''}</span></div></div>`;
+  }
+  return `<div class="card cloud"><span class="muted">${ic('lock', 24)}</span><div class="grow"><b>Nur auf diesem Gerät</b>
+    <span class="muted">Mit Konto ist dein Heft gesichert und du kannst dich mit Freunden messen.</span></div>
+    <button class="btn-ghost press" data-act="tab" data-view="liga">Konto</button></div>`;
+}
+
+/* ================= Rendern & Navigation ================= */
+const VIEWS = { verein: viewVerein, spiele: viewSpiele, stadien: viewStadien, liga: viewLiga, heft: viewHeft };
+function viewFromHash() {
+  const h = location.hash.slice(1);
+  if (h === 'tabelle') { S.spieleMode = 'tabelle'; return 'spiele'; }
+  return VIEWS[h] ? h : 'verein';
+}
+
+function render() {
+  const view = $('#view');
+  if (S.lmap) { S.lmap.remove(); S.lmap = null; }
+  const kept = {};
+  view.querySelectorAll('input[id]').forEach((el) => { kept[el.id] = el.value; });
+  const focusId = document.activeElement?.id;
+  view.innerHTML = VIEWS[S.view]();
+  Object.entries(kept).forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
+  if (focusId && kept[focusId] !== undefined) document.getElementById(focusId)?.focus();
+  if ($('#lmap')) mountMap();
+  document.querySelectorAll('.tab').forEach((t) => {
+    const on = t.dataset.view === S.view;
+    t.classList.toggle('on', on);
+    if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  });
+  const chips = $('#chips');
+  if (chips) {
+    chips.style.scrollBehavior = 'auto';
+    chips.scrollLeft = S.chipScroll;
+    const on = chips.querySelector('.chip.on');
+    if (on) {
+      const target = on.offsetLeft - chips.clientWidth / 2 + on.clientWidth / 2;
+      requestAnimationFrame(() => { chips.style.scrollBehavior = ''; chips.scrollLeft = target; S.chipScroll = target; });
+    }
+  }
+}
+
+window.addEventListener('hashchange', () => {
+  S.view = viewFromHash(); S.nearError = null; S.ligaMsg = null; render(); window.scrollTo(0, 0);
+  if (S.view === 'liga' && S.user && S.league) loadBoard(S.league).then(() => { if (S.view === 'liga') render(); });
+});
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const id = Number(el.dataset.id);
+  const v = store.visits[id];
+  switch (el.dataset.act) {
+    case 'tab': if (location.hash !== `#${el.dataset.view}`) location.hash = el.dataset.view; else window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'md': setMatchday(Number(el.dataset.md)); break;
+    case 'md-prev': setMatchday(S.matchday - 1); break;
+    case 'md-next': setMatchday(S.matchday + 1); break;
+    case 'open': openMatch(id); break;
+    case 'open-visit': openMatch(id); break;
+    case 'close': closeSheet(); break;
+    case 'stadium': S.sheet = { type: 'stadium', id }; renderSheet(); break;
+    case 'retry': S.cache = {}; S.tables = {}; S.tableErrors = {}; S.clubCache = {}; start(); break;
+    case 'spiele-mode': S.spieleMode = el.dataset.mode; render(); break;
+    case 'pick-club': {
+      S.clubView = id; S.clubPicking = false;
+      if (!store.fav) { store.fav = id; persistFav(); }
+      render(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    }
+    case 'club-change': S.clubPicking = !S.clubPicking; render(); break;
+    case 'club-fav': store.fav = id; S.clubView = null; persistFav(); vibrate(); render(); break;
+    case 'hist-season': S.histSeason = Number(el.dataset.season); render(); break;
+    case 'manual': S.manualMsg = null; S.sheet = { type: 'manual' }; renderSheet(); break;
+    case 'tick': {
+      const m = Object.values(S.clubCache).flatMap((x) => x.list).find((x) => x.matchID === id);
+      if (!m) break;
+      if (v) deleteVisit(id);
+      else { store.visits[id] = visitFromMatch(m, matchState(m) !== 'upcoming'); persistVisit(store.visits[id]); vibrate(); }
+      render(); break;
+    }
+    case 'attend': {
+      const m = S.sheet.match;
+      const cur = store.visits[m.matchID];
+      if (cur) { cur.attended = true; updateVisit(cur, m); } else store.visits[m.matchID] = visitFromMatch(m, true);
+      persistVisit(store.visits[m.matchID]); vibrate(); renderSheet(); render(); break;
+    }
+    case 'plan': { const m = S.sheet.match; store.visits[m.matchID] = visitFromMatch(m, false); persistVisit(store.visits[m.matchID]); vibrate(); renderSheet(); render(); break; }
+    case 'remove': deleteVisit(S.sheet.match.matchID); renderSheet(); render(); break;
+    case 'confirm-yes': if (v) { v.attended = true; persistVisit(v); vibrate(); render(); } break;
+    case 'confirm-no': deleteVisit(id); render(); break;
+    case 'logout': if (sb) sb.auth.signOut().finally(() => { if (S.user) afterLogout(); }); break;
+    case 'league': S.league = el.dataset.lid; S.ligaMsg = null; S.confirmLeave = null; render(); if (!S.board[S.league]) loadBoard(S.league).then(render); break;
+    case 'invite': { const l = (S.leagues || []).find((x) => x.id === el.dataset.lid); if (l) shareInvite(l); break; }
+    case 'leave': S.confirmLeave = el.dataset.lid; render(); break;
+    case 'leave-no': S.confirmLeave = null; render(); break;
+    case 'leave-yes': leaveLeague(el.dataset.lid); break;
+    case 'near': findNearby(); break;
+    case 'map-style': setMapStyle(el.dataset.style); break;
+  }
+});
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'fav') { store.fav = Number(e.target.value); S.clubView = null; persistFav(); render(); }
+  if (e.target.id === 'bseason') setSeason(Number(e.target.value));
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'note') { const v = store.visits[Number(e.target.dataset.id)]; if (v) { v.note = e.target.value; persistNoteSoon(v); } }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.sheet) closeSheet(); });
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.id === 'auth-form') {
+    const mode = e.submitter?.dataset.mode || 'login';
+    authSubmit(mode, $('#au').value, $('#ap').value);
+  } else if (f.id === 'create-form') {
+    S.ligaMsg = null; createLeague($('#lname').value).then(() => { const i = $('#lname'); if (i) i.value = ''; });
+  } else if (f.id === 'manual-form') {
+    saveManual();
+  } else if (f.id === 'join-form') {
+    S.ligaMsg = null; joinLeague($('#lcode').value).then(() => { const i = $('#lcode'); if (i) i.value = ''; });
+  }
+});
+
+function vibrate() { try { navigator.vibrate?.(15); } catch (e) { /* nicht unterstützt */ } }
+
+function findNearby() {
+  if (S.nearby) { S.nearby = null; S.mapView = null; render(); return; }
+  S.nearError = null;
+  if (!navigator.geolocation) { S.nearError = 'Dein Browser gibt keinen Standort frei.'; render(); return; }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      S.nearby = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      S.mapView = { center: [S.nearby.lon, S.nearby.lat], zoom: 8 };
+      render();
+    },
+    () => { S.nearError = 'Standort nicht verfügbar. Erlaube den Standortzugriff in den Browser-Einstellungen. In der Vorschau geht das nicht.'; render(); },
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+  );
+}
+
+/* Tab-Icons einsetzen */
+document.querySelectorAll('[data-icon]').forEach((el) => { el.outerHTML = ic(el.dataset.icon, 24, 1.9); });
+
+/* Offline-Fähigkeit, wenn gehostet */
+try {
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+} catch (e) { /* nicht verfügbar */ }
+
+/* Einladungslink ?join=CODE */
+try {
+  const code = new URLSearchParams(location.search).get('join') || sessionStorage.getItem('stadionheft.join');
+  if (code && /^[A-Za-z0-9]{6,12}$/.test(code)) {
+    S.pendingJoin = code.toUpperCase();
+    sessionStorage.setItem('stadionheft.join', S.pendingJoin);
+    history.replaceState(null, '', `${location.pathname}#liga`);
+  }
+} catch (e) { /* egal */ }
+
+S.view = viewFromHash();
+start();
+</script>
+</body>
+</html>
